@@ -1,0 +1,109 @@
+.create-post-page {
+  max-width: 640px;
+  margin: 20px auto 0;
+}
+
+.create-post-card {
+  padding: 22px;
+}
+
+.create-post-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.create-post-head h2 {
+  font-size: 20px;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cv-muted);
+  background: var(--cv-soft);
+}
+
+.create-post-user {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.create-post-user strong {
+  display: block;
+  font-size: 15px;
+}
+
+.privacy-btn {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--cv-muted);
+  background: var(--cv-soft);
+  border: 1px solid var(--cv-border);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.create-post-textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 16px;
+  margin: 18px 0;
+  color: var(--cv-text);
+  background: transparent;
+}
+
+.create-post-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.create-post-attach {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cv-border);
+}
+
+.create-post-attach button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--cv-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px;
+  border-radius: 8px;
+}
+
+.create-post-attach button:hover {
+  background: var(--cv-soft);
+  color: var(--cv-text);
+}
+
+.create-post-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.char-count {
+  color: var(--cv-muted);
+  font-size: 13px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

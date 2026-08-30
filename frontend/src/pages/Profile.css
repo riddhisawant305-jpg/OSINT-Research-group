@@ -1,0 +1,152 @@
+.profile-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+.profile-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Hero */
+.profile-hero {
+  padding: 0;
+  overflow: hidden;
+}
+
+.profile-cover {
+  height: 140px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+
+.profile-hero-body {
+  padding: 0 24px 24px;
+  position: relative;
+}
+
+.profile-hero-body .cv-avatar {
+  margin-top: -60px;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.profile-hero-body h1 {
+  font-size: 24px;
+  margin-top: 12px;
+}
+
+.profile-hero-body .headline {
+  color: var(--cv-muted);
+  font-size: 15px;
+  margin: 4px 0 10px;
+}
+
+.meta-line {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  color: var(--cv-muted);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.meta-line span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.edit-btn {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.edit-btn:hover {
+  background: var(--cv-soft);
+}
+
+/* Sections */
+.profile-section {
+  padding: 20px;
+}
+
+.profile-section h3 {
+  font-size: 17px;
+  margin-bottom: 12px;
+}
+
+.profile-section > p {
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.exp-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.exp-dot {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--cv-soft);
+  border: 1px solid var(--cv-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--cv-blue);
+  flex-shrink: 0;
+}
+
+.exp-row div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.exp-row strong {
+  font-size: 14px;
+}
+
+.exp-row span {
+  color: var(--cv-muted);
+  font-size: 13px;
+}
+
+.exp-row small {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-posts {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+}

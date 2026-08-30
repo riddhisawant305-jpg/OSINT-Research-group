@@ -1,0 +1,175 @@
+.resume-page {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.resume-subtitle {
+  color: var(--cv-muted);
+  margin-bottom: 20px;
+}
+
+.resume-upload-area {
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.upload-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: var(--cv-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.resume-upload-area h3 {
+  font-size: 18px;
+}
+
+.resume-upload-area p {
+  color: var(--cv-muted);
+  font-size: 14px;
+  margin: 6px 0 18px;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--cv-border);
+}
+
+.resume-paste {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--cv-border);
+  border-radius: 10px;
+  outline: none;
+  resize: vertical;
+  background: var(--cv-soft);
+}
+
+.analyze-btn {
+  margin-top: 16px;
+}
+
+/* Results */
+.resume-score-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 26px;
+  margin-bottom: 18px;
+}
+
+.score-ring {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.score-inner {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding-top: 26px;
+}
+
+.score-inner strong {
+  font-size: 34px;
+  color: var(--cv-blue);
+}
+
+.score-inner span {
+  color: var(--cv-muted);
+  font-size: 14px;
+}
+
+.resume-score-card h3 {
+  font-size: 20px;
+}
+
+.resume-score-card p {
+  color: var(--cv-muted);
+  font-size: 14px;
+  margin: 6px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.resume-section-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resume-row {
+  padding: 16px 18px;
+}
+
+.resume-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resume-row-head strong {
+  flex: 1;
+  font-size: 15px;
+}
+
+.resume-row-head span {
+  font-weight: 700;
+  color: var(--cv-text);
+}
+
+.resume-row-head .good { color: var(--cv-green); }
+.resume-row-head .warn { color: #d97706; }
+.resume-row-head .bad { color: var(--cv-red); }
+
+.bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.resume-tip {
+  color: var(--cv-muted);
+  font-size: 13px;
+}

@@ -1,0 +1,131 @@
+.post-card {
+  background: #fff;
+  border: 1px solid var(--cv-border);
+  border-radius: 16px;
+  box-shadow: var(--cv-shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.post-head {
+  display: flex;
+  gap: 12px;
+}
+
+.post-head-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.post-head-meta strong {
+  font-size: 15px;
+}
+
+.post-head-meta span {
+  font-size: 13px;
+  color: var(--cv-muted);
+}
+
+.post-head-meta small {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.post-body {
+  margin: 16px 0;
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.post-stats {
+  display: flex;
+  justify-content: space-between;
+  color: var(--cv-muted);
+  font-size: 13px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--cv-border);
+}
+
+.post-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.post-actions {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 8px;
+}
+
+.post-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cv-muted);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.post-action:hover {
+  background: var(--cv-soft);
+  color: var(--cv-text);
+}
+
+.post-action.liked {
+  color: var(--cv-blue);
+}
+
+.post-comments {
+  margin-top: 14px;
+  border-top: 1px solid var(--cv-border);
+  padding-top: 14px;
+}
+
+.comment {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.comment-bubble {
+  background: var(--cv-soft);
+  border-radius: 12px;
+  padding: 8px 12px;
+  flex: 1;
+}
+
+.comment-bubble strong {
+  font-size: 13px;
+  display: block;
+}
+
+.comment-bubble p {
+  font-size: 13px;
+  color: #374151;
+  margin-top: 2px;
+}
+
+.comment-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.comment-input input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--cv-border);
+  border-radius: 20px;
+  outline: none;
+}
+
+.comment-input .btn-primary {
+  padding: 8px 16px;
+  font-size: 13px;
+}

@@ -1,0 +1,152 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid var(--cv-border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  gap: 20px;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.navbar-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--cv-grad);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-brand > span {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--cv-blue-dark);
+}
+
+.navbar-brand > span span {
+  color: var(--cv-violet);
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navbar-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.navbar-link:hover {
+  background: var(--cv-soft);
+}
+
+.navbar-link.active {
+  color: var(--cv-blue);
+}
+
+.navbar-link.active::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -8px;
+  height: 2px;
+  background: var(--cv-blue);
+}
+
+.navbar-link-icon {
+  position: relative;
+  display: flex;
+}
+
+.navbar-link-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cv-muted);
+}
+
+.navbar-link.active .navbar-link-label {
+  color: var(--cv-blue);
+}
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: var(--cv-red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.navbar-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 10px;
+}
+
+.navbar-profile:hover {
+  background: var(--cv-soft);
+}
+
+.navbar-profile-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .navbar-profile-name {
+    display: none;
+  }
+
+  .navbar-link-label {
+    display: none;
+  }
+
+  .navbar-links {
+    gap: 0;
+  }
+
+  .navbar-link {
+    padding: 8px 12px;
+  }
+}

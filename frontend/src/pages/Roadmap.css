@@ -1,0 +1,123 @@
+.roadmap-page {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.roadmap-head {
+  padding: 22px;
+  margin-bottom: 22px;
+}
+
+.roadmap-title {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.rm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--cv-grad);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.roadmap-title p {
+  color: var(--cv-muted);
+  font-size: 14px;
+}
+
+.roadmap-progress {
+  margin-top: 18px;
+}
+
+.roadmap-progress span {
+  display: block;
+  color: var(--cv-muted);
+  font-size: 13px;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.rm-bar {
+  margin-bottom: 0;
+}
+
+.roadmap-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.week-label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.week-num {
+  width: 90px;
+  background: var(--cv-grad);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.week-track {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--cv-text);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.week-track svg {
+  color: var(--cv-blue);
+}
+
+.week-tasks {
+  padding: 6px 0;
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.task-row:hover {
+  background: var(--cv-soft);
+}
+
+.task-check {
+  color: #c4b5fd;
+  flex-shrink: 0;
+}
+
+.task-check.done {
+  color: var(--cv-green);
+}
+
+.task-row span {
+  color: #374151;
+  font-size: 15px;
+}
+
+.task-row.done span {
+  color: #9ca3af;
+  text-decoration: line-through;
+}

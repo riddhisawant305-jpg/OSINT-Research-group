@@ -1,184 +1,518 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
-
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #211d23;
 }
 
-#center {
+button {
+  cursor: pointer;
+}
+
+
+/* =========================
+   COMMON PAGE
+========================= */
+
+.page {
+  min-height: 100vh;
+  background: #211d23;
+
+  display: flex;
+  justify-content: center;
+}
+
+.welcome-container,
+.auth-container,
+.home-container,
+.profile-container {
+  width: 100%;
+  max-width: 600px;
+  min-height: 100vh;
+  background: white;
+}
+
+
+/* =========================
+   WELCOME PAGE
+========================= */
+
+.welcome-container {
+
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
 
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px;
 }
 
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
+.logo-circle {
 
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
+  width: 220px;
+  height: 220px;
 
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
+  background: #1295ed;
 
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+  border-radius: 50%;
+
+  margin-bottom: 60px;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
+.welcome-container h1 {
 
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+  font-size: 52px;
+
+  font-weight: 800;
+
+  margin-bottom: 20px;
 }
 
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
+.tagline {
 
-  .logo {
-    height: 18px;
-  }
+  font-size: 27px;
 
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
+  color: #888;
 
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
+  font-weight: 600;
 
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+  margin-bottom: 55px;
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
-}
 
-.ticks {
-  position: relative;
+/* =========================
+   BUTTON
+========================= */
+
+.primary-btn {
+
   width: 100%;
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
+  height: 65px;
+
+  background: #1295ed;
+
+  color: white;
+
+  border: 2px solid #555;
+
+  border-radius: 13px;
+
+  font-size: 24px;
+
+  font-weight: bold;
+}
+
+
+/* =========================
+   AUTH
+========================= */
+
+.auth-container {
+
+  padding: 70px 35px;
+
+  text-align: center;
+}
+
+.auth-container h1 {
+
+  font-size: 42px;
+
+  margin-bottom: 50px;
+}
+
+.auth-container h2 {
+
+  font-size: 34px;
+
+  font-weight: 500;
+
+  margin-bottom: 20px;
+}
+
+.auth-subtitle {
+
+  font-size: 20px;
+
+  margin-bottom: 35px;
+}
+
+
+/* Auth Card */
+
+.auth-card {
+
+  background: #919194;
+
+  border: 2px solid #555;
+
+  border-radius: 15px;
+
+  padding: 30px;
+
+  text-align: left;
+}
+
+.auth-card label {
+
+  display: block;
+
+  font-size: 24px;
+
+  margin-bottom: 8px;
+}
+
+.auth-card input {
+
+  width: 100%;
+
+  height: 65px;
+
+  background: white;
+
+  border: 2px solid #555;
+
+  border-radius: 14px;
+
+  padding: 12px;
+
+  font-size: 18px;
+
+  margin-bottom: 20px;
+}
+
+.auth-card .primary-btn {
+
+  margin-top: 15px;
+}
+
+.switch-text {
+
+  text-align: center;
+
+  margin-top: 18px;
+
+  color: #333;
+}
+
+.switch-text span {
+
+  color: #00a9d8;
+
+  font-weight: bold;
+
+  cursor: pointer;
+}
+
+
+/* =========================
+   NAVBAR
+========================= */
+
+.navbar {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  padding: 25px 30px;
+}
+
+.navbar h1 {
+
+  font-size: 40px;
+
+  font-weight: 800;
+}
+
+.navbar-icons {
+
+  display: flex;
+
+  gap: 20px;
+}
+
+.navbar-icons button {
+
+  background: transparent;
+
+  border: none;
+
+  font-size: 27px;
+}
+
+
+/* =========================
+   SEARCH
+========================= */
+
+.search-container {
+
+  margin: 25px 45px;
+
+  height: 65px;
+
+  border: 2px solid #777;
+
+  border-radius: 15px;
+
+  display: flex;
+
+  align-items: center;
+
+  padding: 0 15px;
+
+  gap: 10px;
+}
+
+.search-container input {
+
+  border: none;
+
+  outline: none;
+
+  width: 100%;
+
+  font-size: 19px;
+}
+
+
+/* =========================
+   GREETING
+========================= */
+
+.greeting {
+
+  padding: 20px 65px;
+}
+
+.greeting h2 {
+
+  font-size: 34px;
+
+  margin-bottom: 10px;
+}
+
+.greeting p {
+
+  font-size: 20px;
+
+  color: #777;
+
+  font-weight: bold;
+}
+
+
+/* =========================
+   JOBS
+========================= */
+
+.jobs-container {
+
+  padding: 20px 30px;
+}
+
+.job-card {
+
+  background: #dfe3de;
+
+  border: 2px solid #777;
+
+  border-radius: 18px;
+
+  padding: 18px;
+
+  margin-bottom: 60px;
+}
+
+.job-card h2 {
+
+  font-size: 27px;
+
+  margin-bottom: 20px;
+}
+
+.job-card h3 {
+
+  font-size: 21px;
+
+  margin-bottom: 20px;
+}
+
+.job-footer {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  font-weight: bold;
+}
+
+.job-footer button {
+
+  background: #1295ed;
+
+  border: 2px solid #555;
+
+  border-radius: 12px;
+
+  padding: 13px 28px;
+
+  font-size: 18px;
+
+  font-weight: bold;
+}
+
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile-container {
+
+  padding: 60px 65px;
+}
+
+.profile-container h1 {
+
+  text-align: center;
+
+  font-size: 36px;
+
+  margin-bottom: 35px;
+}
+
+.profile-photo {
+
+  width: 120px;
+  height: 120px;
+
+  border-radius: 50%;
+
+  background: #dfe3de;
+
+  border: 2px solid #555;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  margin: 0 auto 45px;
+}
+
+.profile-photo span {
+
+  font-size: 45px;
+}
+
+
+/* Profile Fields */
+
+.profile-field {
+
+  margin-bottom: 30px;
+}
+
+.profile-field label {
+
+  display: block;
+
+  font-size: 24px;
+
+  font-weight: bold;
+
+  margin-bottom: 8px;
+}
+
+.profile-field input,
+.profile-field textarea {
+
+  width: 100%;
+
+  background: #dfe3de;
+
+  border: 2px solid #777;
+
+  border-radius: 15px;
+
+  padding: 15px;
+
+  font-size: 17px;
+}
+
+.profile-field input {
+
+  height: 70px;
+}
+
+.profile-field textarea {
+
+  height: 120px;
+
+  resize: none;
+}
+
+.save-button {
+
+  margin-top: 10px;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+  .logo-circle {
+
+    width: 180px;
+
+    height: 180px;
+
+    margin-bottom: 40px;
   }
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
+  .welcome-container h1 {
+
+    font-size: 40px;
   }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
+
+  .tagline {
+
+    font-size: 21px;
   }
+
+  .auth-container {
+
+    padding: 50px 25px;
+  }
+
+  .auth-container h1 {
+
+    font-size: 35px;
+  }
+
+  .navbar h1 {
+
+    font-size: 30px;
+  }
+
+  .profile-container {
+
+    padding: 45px 30px;
+  }
+
 }

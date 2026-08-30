@@ -1,0 +1,105 @@
+.connections-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.conn-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.total-count {
+  color: var(--cv-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.conn-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.conn-tab {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid var(--cv-border);
+  color: var(--cv-muted);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.conn-tab.active {
+  background: var(--cv-grad);
+  color: #fff;
+  border-color: transparent;
+}
+
+.tab-count {
+  margin-left: 5px;
+  opacity: 0.85;
+  font-size: 13px;
+}
+
+.connections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.connection-card {
+  text-align: center;
+  padding: 0 18px 18px;
+  overflow: hidden;
+}
+
+.conn-card-cover {
+  height: 55px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  margin: 0 -18px;
+}
+
+.connection-card .cv-avatar {
+  margin: -36px auto 0;
+  border: 3px solid #fff;
+}
+
+.connection-card h3 {
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.connection-card p {
+  color: var(--cv-muted);
+  font-size: 13px;
+  margin: 4px 0;
+}
+
+.connection-card small {
+  color: #9ca3af;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.conn-connect,
+.conn-connected {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.conn-connected {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
