@@ -115,6 +115,10 @@
   padding: 0 4px;
 }
 
+.navbar-profile-wrapper {
+  position: relative;
+}
+
 .navbar-profile {
   display: flex;
   align-items: center;
@@ -122,6 +126,8 @@
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 10px;
+  transition: background 0.15s ease;
+  user-select: none;
 }
 
 .navbar-profile:hover {
@@ -131,6 +137,118 @@
 .navbar-profile-name {
   font-weight: 600;
   font-size: 14px;
+  color: var(--cv-text);
+}
+
+.navbar-profile-arrow {
+  color: var(--cv-muted);
+  transition: transform 0.2s ease;
+}
+
+.navbar-profile-arrow.open {
+  transform: rotate(180deg);
+}
+
+.navbar-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 230px;
+  background: #ffffff;
+  border: 1px solid var(--cv-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: 8px;
+  z-index: 1000;
+  animation: dropdownFadeIn 0.18s ease forwards;
+}
+
+/* Invisible hover bridge to keep mouse interaction continuous */
+.navbar-dropdown-menu::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 14px;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 10px;
+}
+
+.navbar-dropdown-user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.navbar-dropdown-user-info strong {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar-dropdown-user-info span {
+  font-size: 11.5px;
+  color: var(--cv-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar-dropdown-divider {
+  height: 1px;
+  background: var(--cv-border);
+  margin: 6px 0;
+}
+
+.navbar-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.navbar-dropdown-item:hover {
+  background: var(--cv-soft);
+  color: var(--cv-blue);
+}
+
+.navbar-dropdown-logout {
+  color: #ef4444;
+}
+
+.navbar-dropdown-logout:hover {
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 @media (max-width: 768px) {

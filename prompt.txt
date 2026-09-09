@@ -1,0 +1,944 @@
+PROJECT: CareerVerse REPOSITORY:
+https://github.com/riddhisawant305-jpg/OSINT-Research-group
+
+ROLE
+
+You are working as the backend engineer for the existing CareerVerse
+project.
+
+Your job is to implement a COMPLETE, PRODUCTION-QUALITY backend and
+connect the existing frontend to it ONLY where absolutely necessary for
+functionality.
+
+CRITICAL CONSTRAINT #1 — DO NOT CHANGE THE FRONTEND UI
+
+The existing frontend is already designed and implemented.
+
+DO NOT redesign it. DO NOT replace components. DO NOT change the visual
+layout. DO NOT change CSS styling. DO NOT change colors, typography,
+spacing, cards, navigation, page structure, icons, or existing UI/UX. DO
+NOT remove existing frontend pages. DO NOT rewrite the frontend
+architecture unnecessarily.
+
+The frontend must remain visually and structurally the same.
+
+However, the current frontend contains dummy/local state and fake
+navigation for several features. It is EXPECTED that you will make the
+MINIMUM necessary frontend logic changes to connect existing
+forms/buttons/pages to the backend APIs.
+
+In other words:
+
+KEEP: - Existing UI - Existing pages - Existing styling - Existing
+components - Existing navigation - Existing visual design
+
+CHANGE ONLY: - API calls - State/data loading - Form submission logic -
+Authentication persistence - Backend integration - Loading/error/success
+handling where needed
+
+Do not use frontend modification as an excuse to redesign anything.
+
+PROJECT UNDERSTANDING
+
+The repository has:
+
+OSINT-Research-group/ backend/ frontend/
+
+The frontend is a React + Vite application.
+
+The backend is Node.js + Express + MongoDB/Mongoose.
+
+The backend currently contains: - server.js - config/db.js -
+models/User.js - package.json - package-lock.json - .env
+
+The existing backend uses: - express - cors - dotenv - mongoose -
+nodemon
+
+The existing User model already contains fields approximately equivalent
+to: - name - email - password - headline - skills - education -
+experience - resume - profilePhoto - role - timestamps
+
+The role field supports: - student - recruiter
+
+The existing frontend contains pages/features including authentication,
+home/dashboard, jobs, job details, connections, create post, edit
+profile, recruiter-related areas, and career tools.
+
+IMPORTANT EXISTING-FRONTEND OBSERVATION
+
+The existing login and signup forms currently behave like mock/demo
+functionality. Login and signup currently navigate to the home page
+rather than performing real authentication.
+
+The Jobs page currently reads jobs from frontend dummy data and manages
+saved jobs in local React state.
+
+Therefore, backend implementation must replace these fake/local
+behaviors with real persistent functionality while preserving the
+existing UI.
+
+PRIMARY OBJECTIVE
+
+At minimum, the following functionality MUST work end-to-end:
+
+1.  Registration
+2.  Login
+3.  Logout/session persistence
+4.  Authentication protection
+5.  Dashboard
+6.  Profile viewing
+7.  Profile editing
+8.  Adding/editing education details
+9.  Adding skills
+10. Editing/removing skills
+11. Adding/editing experience
+12. Post creation
+13. Job listing
+14. Job details
+15. Job application
+16. Application persistence
+17. Student application history
+18. Recruiter-side job/application functionality where supported by
+    existing UI
+19. Career Tools backend integration
+20. AI Career Mentor using free Gemini API
+21. Resume Analyzer using free Gemini API
+22. Proper MongoDB persistence
+23. Proper error handling
+24. Proper authentication/authorization
+25. API/frontend integration without visual redesign
+
+DATABASE CONNECTIVITY
+
+I HAVE ALSO ADDED AN ATLAS CREDENTIALS ENVIRONMENT FILE INSIDE THE
+BACKEND FOLDER FOR DATABASE CONNECTIVITY.
+
+IMPORTANT: - Inspect the backend environment files before changing
+anything. - Use the existing Atlas credentials/environment setup rather
+than inventing a new database configuration. - NEVER hard-code MongoDB
+credentials. - NEVER print or expose secrets in source code, logs, API
+responses, README files, commits, or frontend code. - If the existing
+environment variable name is MONGO_URI, use it. - If the Atlas
+credentials file contains variables that need to be assembled into a
+URI, implement that safely in backend configuration. - Make sure the
+database connection works using the provided Atlas credentials. - Add
+appropriate environment files to .gitignore if they contain secrets. -
+Do not commit credentials.
+
+Before implementation, inspect: - backend/.env -
+backend/atlas-credentials.env (or the exact filename that exists) -
+backend/config/db.js
+
+Do not expose their secret values in output.
+
+ENVIRONMENT VARIABLES
+
+Create/use a backend environment configuration supporting at least:
+
+PORT=5000 MONGO_URI= JWT_SECRET= GEMINI_API_KEY= GEMINI_MODEL=
+
+If the existing Atlas environment file uses different names, preserve
+compatibility and adapt the configuration accordingly.
+
+For Gemini: - Create a clear environment variable/provision for the API
+key. - Use the free Gemini API tier. - Never expose GEMINI_API_KEY to
+the React frontend. - All Gemini requests MUST go through the backend. -
+Do not place the Gemini API key in VITE_* variables. - Do not hard-code
+the key.
+
+Use a model that is available on the free Gemini API tier at
+implementation time. Make the model configurable through GEMINI_MODEL so
+it can be changed without source-code changes.
+
+BACKEND ARCHITECTURE
+
+Create a clean maintainable structure similar to:
+
+backend/ config/ db.js
+
+    controllers/
+        authController.js
+        userController.js
+        postController.js
+        jobController.js
+        applicationController.js
+        connectionController.js
+        careerController.js
+
+    middleware/
+        authMiddleware.js
+        roleMiddleware.js
+        errorMiddleware.js
+
+    models/
+        User.js
+        Post.js
+        Job.js
+        Application.js
+        Connection.js
+        SavedJob.js
+        Education.js OR embedded education structure
+        Experience.js OR embedded experience structure
+
+    routes/
+        authRoutes.js
+        userRoutes.js
+        postRoutes.js
+        jobRoutes.js
+        applicationRoutes.js
+        connectionRoutes.js
+        careerRoutes.js
+
+    services/
+        geminiService.js
+
+    utils/
+        validation helpers as needed
+
+    server.js
+
+Do not create unnecessary complexity. Keep the architecture
+understandable for a student development team.
+
+AUTHENTICATION
+
+Implement REAL authentication.
+
+REGISTRATION: POST /api/auth/register
+
+Requirements: - Validate name - Validate email - Validate password -
+Enforce minimum password length - Normalize email - Reject duplicate
+email - Hash password using bcrypt/bcryptjs - Never store plaintext
+passwords - Create user - Default role = student unless a safe
+recruiter-registration flow already exists - Return sanitized user
+data - Authenticate user after successful registration if appropriate
+
+LOGIN: POST /api/auth/login
+
+Requirements: - Validate credentials - Find user by email - Compare
+hashed password - Return JWT authentication token or secure session
+mechanism - Return sanitized user information - Never return password -
+Return useful error for invalid credentials without leaking sensitive
+information
+
+CURRENT USER: GET /api/auth/me
+
+Requirements: - Require authentication - Return current authenticated
+user - Never return password
+
+LOGOUT: Implement logout appropriately for the selected authentication
+approach.
+
+If using JWT stored client-side: - Implement a clear frontend logout
+flow - Clear token and user state
+
+Prefer a secure architecture. If using cookies: - Prefer HTTP-only
+cookies - Configure CORS credentials correctly
+
+AUTH MIDDLEWARE
+
+Create middleware that: - Reads authentication token/session - Validates
+it - Identifies user - Adds user information to req.user - Rejects
+unauthenticated requests with 401 - Handles invalid/expired tokens
+properly
+
+ROLE AUTHORIZATION
+
+Create reusable role middleware.
+
+Examples: - Student-only actions - Recruiter-only actions
+
+Do NOT trust a role sent from the frontend. Always determine role from
+the authenticated database user.
+
+USER PROFILE
+
+Implement complete persistent profiles.
+
+Required endpoints:
+
+GET /api/users/me GET /api/users/:id PUT /api/users/me
+
+The existing User model should be expanded carefully if needed.
+
+Profile must support: - Name - Headline - Email where appropriate -
+Skills - Education - Experience - Resume reference - Profile photo
+reference - Role - Timestamps
+
+Do not expose password.
+
+SKILLS
+
+Skills MUST persist in MongoDB.
+
+Implement endpoints such as:
+
+PUT /api/users/me/skills POST /api/users/me/skills DELETE
+/api/users/me/skills/:skill
+
+Support: - Adding a skill - Removing a skill - Editing/updating skills -
+Preventing obvious duplicate skills - Trimming/normalizing skill strings
+
+The existing profile UI should continue to look exactly the same.
+
+EDUCATION
+
+The dashboard/profile must support adding and editing education details.
+
+Design a sensible education structure.
+
+Recommended structure:
+
+education: [ { institution: String, degree: String, fieldOfStudy:
+String, startDate: Date/String, endDate: Date/String, description:
+String }]
+
+Implement APIs such as:
+
+POST /api/users/me/education PUT /api/users/me/education/:educationId
+DELETE /api/users/me/education/:educationId
+
+Adapt the frontend form fields to the existing UI rather than
+redesigning them.
+
+EXPERIENCE
+
+Support multiple experience records.
+
+Recommended structure:
+
+experience: [ { company: String, position: String, location: String,
+startDate: Date/String, endDate: Date/String, current: Boolean,
+description: String }]
+
+Implement:
+
+POST /api/users/me/experience PUT /api/users/me/experience/:experienceId
+DELETE /api/users/me/experience/:experienceId
+
+Ensure the existing Edit Profile page can add/edit experience without
+visual redesign.
+
+DASHBOARD
+
+The dashboard must use REAL database data.
+
+Do not leave dashboard statistics/data hard-coded if they can be derived
+from the backend.
+
+Create a dashboard endpoint such as:
+
+GET /api/users/me/dashboard
+
+Return useful data such as: - Current user profile summary - Skills
+count - Education count - Experience count - Number of posts - Number of
+connections - Number of applications - Saved jobs count - Recent
+applications - Recent posts - Profile completeness if the existing
+dashboard displays it
+
+Use MongoDB aggregation/count queries where appropriate.
+
+Do not make the frontend calculate database-level statistics from dummy
+data.
+
+POST CREATION
+
+Implement real post creation.
+
+Required:
+
+POST /api/posts GET /api/posts GET /api/posts/:id PUT /api/posts/:id
+DELETE /api/posts/:id
+
+Post should support at minimum: - author - content - optional
+image/media reference if the existing UI supports it - createdAt -
+updatedAt
+
+Rules: - Only authenticated users can create posts. - Users can
+edit/delete their own posts. - Admin/recruiter permissions should not
+automatically allow arbitrary deletion unless explicitly required. -
+Populate author information safely. - Never expose sensitive user
+information.
+
+If the existing frontend includes feed functionality, connect it to GET
+/api/posts.
+
+LIKES/COMMENTS
+
+If the existing frontend already has like/comment UI, implement the
+backend endpoints too.
+
+Examples:
+
+POST /api/posts/:id/like DELETE /api/posts/:id/like POST
+/api/posts/:id/comments GET /api/posts/:id/comments
+
+If these UI elements do not currently exist, do not redesign the
+frontend just to add them. Prioritize the required features.
+
+JOBS
+
+Replace frontend dummy job data with persistent MongoDB data.
+
+Create Job model:
+
+title company description location type salary skills recruiter
+createdAt updatedAt
+
+Add fields only when required by the existing UI.
+
+Required endpoints:
+
+GET /api/jobs GET /api/jobs/:id
+
+Recruiter operations:
+
+POST /api/jobs PUT /api/jobs/:id DELETE /api/jobs/:id
+
+Rules: - Only authenticated recruiters can create jobs. - Recruiters can
+edit/delete only their own jobs. - Students can browse jobs. - Job
+listing must support search/filtering. - Do not break the existing Jobs
+page UI.
+
+Support query parameters such as:
+
+GET /api/jobs?search=developer&type=Remote&location=Mumbai
+
+The frontend must stop depending on dummyData.js for actual job data.
+
+JOB DETAILS
+
+GET /api/jobs/:id
+
+Return complete job information needed by the existing Job Details page.
+
+Include safe recruiter/company information.
+
+JOB APPLICATION
+
+This is a HIGH PRIORITY requirement.
+
+Create Application model:
+
+applicant job resume coverLetter status createdAt updatedAt
+
+Possible status values:
+
+Applied Under Review Shortlisted Rejected Accepted
+
+Required:
+
+POST /api/jobs/:jobId/apply GET /api/applications/me GET
+/api/jobs/:jobId/applications GET /api/applications/:id PUT
+/api/applications/:id/status
+
+Rules: - Student must be authenticated. - Prevent applying to the same
+job multiple times. - Verify job exists. - Save application
+permanently. - Recruiter can see applications for their own jobs. -
+Recruiter can update application status. - Applicant can see their
+application status. - Do not allow students to change their own
+application status. - Do not allow recruiters to access applications
+belonging to another recruiter’s job.
+
+If a resume is required by the UI, integrate it with the user’s stored
+resume/reference.
+
+SAVED JOBS
+
+The existing Jobs UI has a save/bookmark interaction, but it currently
+uses local React state.
+
+Make saved jobs persistent.
+
+Create SavedJob model OR a suitable User reference structure.
+
+Recommended:
+
+SavedJob: - user - job - createdAt
+
+Endpoints:
+
+POST /api/jobs/:jobId/save DELETE /api/jobs/:jobId/save GET
+/api/users/me/saved-jobs
+
+Prevent duplicate saves.
+
+CONNECTIONS
+
+The repository contains a Connections page.
+
+Implement persistent connection functionality.
+
+Model:
+
+Connection: - requester - recipient - status - createdAt - updatedAt
+
+Statuses: pending accepted rejected blocked
+
+Endpoints:
+
+POST /api/connections/:userId GET /api/connections GET
+/api/connections/requests PUT /api/connections/:id/accept PUT
+/api/connections/:id/reject DELETE /api/connections/:id
+
+Rules: - Authenticated users only - Cannot connect to self - Prevent
+duplicate active requests - Correctly handle pending/accepted/rejected
+states - Do not expose private information unnecessarily
+
+CAREER TOOLS
+
+There are Career Tools requirements for:
+
+1.  AI Career Mentor
+2.  Resume Analyzer
+
+These MUST be implemented through the backend.
+
+GEMINI API
+
+Use the FREE Gemini API.
+
+Create backend service:
+
+services/geminiService.js
+
+Use environment variables:
+
+GEMINI_API_KEY= GEMINI_MODEL=
+
+The Gemini API key must NEVER be exposed to the frontend.
+
+The frontend calls our backend, and our backend calls Gemini.
+
+Example architecture:
+
+Frontend | | POST /api/career/mentor v Express backend | | Gemini API
+request v Gemini | v Backend response | v Frontend
+
+AI CAREER MENTOR
+
+Implement:
+
+POST /api/career/mentor
+
+Input should support the existing Career Mentor UI, for example:
+
+{ “message”: “…”, “context”: { “skills”: [], “education”: [],
+“experience”: [], “headline”: “” } }
+
+The endpoint should: - Require authentication - Use the authenticated
+user’s profile as context where useful - Accept a user
+question/message - Generate a useful career-oriented response using
+Gemini - Avoid exposing internal prompts/API keys - Return a clean
+response to frontend - Handle Gemini API failures gracefully - Avoid
+making unsupported factual claims - Keep responses career-focused
+
+Do not send passwords or sensitive authentication information to Gemini.
+
+RESUME ANALYZER
+
+Implement:
+
+POST /api/career/resume-analyzer
+
+The endpoint should accept resume content or a safe resume
+representation compatible with the existing UI.
+
+If the frontend currently provides text: - Send the text to Gemini.
+
+If the frontend currently provides a file: - Implement an appropriate
+backend upload/parsing strategy compatible with the existing UI. - Do
+not redesign the UI.
+
+The analyzer should return structured information such as:
+
+{ “score”: 0-100, “strengths”: [], “weaknesses”: [], “missingSkills”:
+[], “suggestions”: [], “atsSuggestions”: [] }
+
+Do not fabricate experience or qualifications.
+
+AI ERROR HANDLING
+
+If Gemini is unavailable, rate-limited, incorrectly configured, or
+returns an error: - Return a useful backend error - Do not crash the
+server - Do not expose API credentials - Give the frontend a
+user-friendly error message
+
+Do not make fake AI responses just to make the UI appear functional.
+
+VALIDATION
+
+Implement proper validation for all important APIs.
+
+At minimum validate: - Email - Password - Required strings -
+IDs/ObjectIds - Job IDs - User IDs - Application IDs - Post IDs - Skill
+values - Education fields - Experience fields
+
+Reject malformed requests with 400.
+
+Use appropriate HTTP status codes:
+
+200 success 201 created 400 validation error 401 unauthenticated 403
+unauthorized 404 not found 409 conflict 429 rate limited where
+applicable 500 server error
+
+ERROR HANDLING
+
+Create centralized Express error middleware.
+
+Never expose: - stack traces in production responses - MongoDB
+connection strings - JWT secrets - Gemini API keys - password hashes
+
+Use consistent API responses.
+
+Example:
+
+{ “success”: true, “message”: “Profile updated successfully”, “data”:
+{…} }
+
+Error:
+
+{ “success”: false, “message”: “Invalid credentials” }
+
+CORS
+
+The frontend runs through Vite, typically on:
+
+http://localhost:5173
+
+Configure CORS correctly for the frontend.
+
+Do not leave unnecessarily broad production CORS configuration.
+
+Make frontend origin configurable using environment variables if
+appropriate.
+
+FRONTEND API INTEGRATION
+
+The frontend must continue to look the same.
+
+Create a clean API layer in the frontend if one does not already exist.
+
+For example:
+
+frontend/src/api/ auth.js users.js posts.js jobs.js applications.js
+connections.js career.js
+
+Use the existing frontend components/pages and connect their existing
+forms/actions to APIs.
+
+Do not replace the existing pages.
+
+AUTH STATE ON FRONTEND
+
+After successful login: - Persist authentication appropriately. - Load
+the authenticated user. - Make refresh/reload preserve authentication. -
+Logout must clear authentication. - Protected pages must not operate as
+anonymous users.
+
+Do not store sensitive secrets in the frontend.
+
+PROFILE INTEGRATION
+
+The existing Edit Profile page must actually update MongoDB.
+
+The following must persist after page refresh:
+
+-   Name
+-   Headline
+-   Skills
+-   Education
+-   Experience
+-   Resume reference
+-   Profile photo reference if supported
+
+DASHBOARD INTEGRATION
+
+Connect the existing dashboard to:
+
+GET /api/users/me/dashboard
+
+The dashboard should display actual user-specific information.
+
+No dummy user statistics where backend data is available.
+
+DATA MODEL REQUIREMENTS
+
+Use MongoDB references where relationships are important.
+
+Recommended:
+
+User | ├── Posts ├── Applications ├── Connections ├── SavedJobs └── Jobs
+if recruiter
+
+Job | └── Applications
+
+Post | └── Author -> User
+
+Application | ├── Applicant -> User └── Job -> Job
+
+Connection | ├── Requester -> User └── Recipient -> User
+
+Use indexes where appropriate: - User.email unique index - Application
+applicant+job unique compound index - SavedJob user+job unique compound
+index - Job search fields as appropriate
+
+SECURITY REQUIREMENTS
+
+Implement at least:
+
+-   Password hashing
+-   Authentication middleware
+-   Role authorization
+-   Input validation
+-   Safe error responses
+-   CORS configuration
+-   Environment-based secrets
+-   Duplicate prevention
+-   Authorization checks on update/delete operations
+-   Basic rate limiting on authentication and AI endpoints if practical
+-   No secrets in Git
+-   No secrets in frontend
+
+Do not commit: - node_modules - .env - atlas credential files - Gemini
+API keys - JWT secrets
+
+Update .gitignore appropriately.
+
+IMPORTANT REPOSITORY CLEANUP
+
+The repository currently contains backend/node_modules.
+
+Remove it from Git tracking.
+
+Use:
+
+git rm -r –cached backend/node_modules
+
+ONLY if that directory is actually tracked in the local repository.
+
+Do not delete the developer’s working dependencies unnecessarily; after
+removing from tracking, npm install should recreate them.
+
+Also verify whether environment/credential files are tracked.
+
+If a real credential has already been committed to Git history, flag
+this clearly and recommend rotating it. Do not assume that adding it to
+.gitignore removes it from Git history.
+
+PACKAGE SCRIPTS
+
+Backend package.json should provide convenient scripts, for example:
+
+“scripts”: { “start”: “node server.js”, “dev”: “nodemon server.js” }
+
+Do not break existing dependencies.
+
+TESTING REQUIREMENTS
+
+After implementation, test the backend thoroughly.
+
+Minimum test sequence:
+
+1.  Start MongoDB/Atlas connection
+2.  Start backend
+3.  GET /
+4.  Register new user
+5.  Attempt duplicate registration
+6.  Login with valid credentials
+7.  Login with invalid credentials
+8.  GET /api/auth/me
+9.  Update profile
+10. Add skill
+11. Remove skill
+12. Add education
+13. Edit education
+14. Add experience
+15. Edit experience
+16. Create post
+17. Read posts
+18. Create recruiter account/role safely
+19. Create job as recruiter
+20. Read jobs as student
+21. Read job details
+22. Save job
+23. Remove saved job
+24. Apply for job
+25. Prevent duplicate application
+26. View student applications
+27. View recruiter applications
+28. Update application status
+29. Create connection request
+30. Accept/reject connection
+31. Dashboard data
+32. AI Career Mentor
+33. Resume Analyzer
+34. Unauthorized endpoint access
+35. Invalid IDs
+36. Database failure handling
+
+Use Postman/Thunder Client or automated tests as appropriate.
+
+DO NOT CREATE FAKE SUCCESS RESPONSES
+
+A button must not display success merely because the frontend navigated.
+
+For every required feature:
+
+Frontend action -> Backend API -> Validation -> Database/service
+operation -> Real response -> Frontend state update
+
+The feature must still work after refreshing the page.
+
+NO DUMMY DATA FOR REQUIRED FUNCTIONALITY
+
+Remove dependency on dummy/local data for required persistent features.
+
+Especially: - Authentication - User profile - Skills - Education -
+Experience - Posts - Jobs - Saved jobs - Applications - Dashboard
+
+The existing dummyData.js may remain for nonessential UI content
+temporarily, but do not use it as the source of truth for features that
+have backend APIs.
+
+PRESERVE EXISTING ROUTES/UI
+
+Inspect the current frontend routes and pages before making integration
+changes.
+
+Do not break: - Home - Login - Signup - Dashboard - Jobs - Job Details -
+Connections - Create Post - Edit Profile - Recruiter pages - Career
+Tools
+
+Where a page currently has static/dummy behavior, wire that behavior to
+the backend.
+
+DO NOT GUESS FRONTEND FIELD NAMES
+
+Before writing integration code, inspect the actual existing JSX
+forms/components.
+
+Map backend fields to the exact existing frontend fields.
+
+If an existing form has: - Full Name - Professional Headline - Email -
+Password
+
+use those exact inputs.
+
+If an education form uses different field names, adapt the API payload
+to it.
+
+Do not redesign forms just because the backend schema is different.
+
+IMPLEMENTATION ORDER
+
+Work in this exact priority order:
+
+PHASE 1 — Environment & Foundation 1. Inspect repository 2. Inspect
+frontend pages/components 3. Inspect backend 4. Verify Atlas environment
+credentials 5. Fix .gitignore 6. Remove tracked node_modules 7.
+Configure backend environment 8. Verify MongoDB connection 9. Add
+start/dev scripts 10. Add error handling
+
+PHASE 2 — Authentication 11. User model review/update 12. Password
+hashing 13. Registration API 14. Login API 15. Authentication middleware
+16. /me endpoint 17. Logout 18. Frontend login integration 19. Frontend
+signup integration 20. Persistent auth state
+
+PHASE 3 — Profile 21. Profile API 22. Skills 23. Education 24.
+Experience 25. Profile editing integration 26. Dashboard endpoint 27.
+Dashboard integration
+
+PHASE 4 — Social 28. Posts 29. Feed 30. Connections 31. Integrate
+existing social UI
+
+PHASE 5 — Jobs 32. Job model 33. Job CRUD 34. Job search/filter 35. Job
+details 36. Saved jobs
+
+PHASE 6 — Applications 37. Application model 38. Apply API 39. Student
+applications 40. Recruiter applications 41. Application status 42.
+Frontend integration
+
+PHASE 7 — Career Tools 43. Gemini service 44. AI Career Mentor 45.
+Resume Analyzer 46. Frontend integration 47. Error/rate-limit handling
+
+PHASE 8 — Testing & Cleanup 48. Test all APIs 49. Test frontend flows
+50. Fix authorization bugs 51. Fix refresh/persistence issues 52. Verify
+no secrets are exposed 53. Verify no required feature uses dummy data
+54. Verify frontend visual design remains unchanged 55. Final cleanup
+
+ACCEPTANCE CRITERIA
+
+Do not consider the task complete until ALL of the following are true:
+
+REGISTRATION - A new user can register. - User is saved in MongoDB. -
+Password is hashed. - Duplicate email is rejected.
+
+LOGIN - Valid user can log in. - Invalid credentials are rejected. -
+Authentication survives refresh. - Logout works.
+
+PROFILE - User can view profile. - User can edit profile. - Skills
+persist. - Education persists. - Experience persists. - Changes remain
+after refresh.
+
+POSTS - Authenticated user can create a post. - Post is saved in
+MongoDB. - Feed retrieves real posts.
+
+DASHBOARD - Dashboard displays authenticated user’s real data. - Counts
+are derived from backend/database.
+
+JOBS - Jobs come from MongoDB. - Job details work. - Search/filter
+works. - Saved jobs persist.
+
+APPLICATIONS - Student can apply. - Duplicate application is blocked. -
+Application persists. - Student can see applications. - Recruiter can
+see applications for their jobs. - Recruiter can update status.
+
+CAREER TOOLS - AI Career Mentor calls backend. - Backend calls Gemini
+using GEMINI_API_KEY. - Gemini key never reaches browser. - Resume
+Analyzer calls backend/Gemini. - AI failures are handled gracefully.
+
+SECURITY - Passwords are never returned. - Secrets are not committed. -
+Unauthorized operations are blocked. - Student/recruiter permissions are
+enforced.
+
+FRONTEND - Existing UI remains visually unchanged. - Existing page
+structure remains. - Existing styling remains. - Only necessary
+integration/state/API changes are made.
+
+FINAL DELIVERABLE
+
+At the end, provide a concise implementation report containing:
+
+1.  Files created
+2.  Files modified
+3.  Database models
+4.  API endpoints
+5.  Authentication approach
+6.  Gemini integration approach
+7.  Environment variables required
+8.  How to start backend
+9.  How to start frontend
+10. How to test each major feature
+11. Any remaining limitations
+12. Any security issues discovered in the original repository
+
+IMPORTANT FINAL RULE
+
+DO NOT STOP AFTER CREATING ROUTES/MODELS.
+
+The goal is not to produce backend boilerplate.
+
+The goal is to make the existing CareerVerse application ACTUALLY WORK
+end-to-end.
+
+Every required frontend action must result in real backend/database
+behavior and must remain functional after page refresh.
+
+Again:
+
+DO NOT REDESIGN THE FRONTEND. DO NOT REPLACE THE FRONTEND. DO NOT CHANGE
+ITS LOOK.
+
+Make the backend complete and integrate it with the existing UI with the
+smallest necessary frontend logic changes.

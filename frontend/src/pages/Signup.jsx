@@ -1,22 +1,80 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "./Signup.css";
 
 function Signup() {
   const navigate = useNavigate();
+  const { signup } = useAuth();
+  const [accountType, setAccountType] = useState("candidate"); // 'candidate' | 'organization'
   const [form, setForm] = useState({
     name: "",
     headline: "",
     email: "",
     password: "",
+    companyIndustry: "",
+    companyWebsite: "",
+    location: "",
+    about: "",
+    hrName: "",
+    phone: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const update = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    navigate("/home");
+    setError("");
+    setLoading(true);
+    try {
+      const payload = {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: accountType === "organization" ? "organization" : "student",
+        headline:
+          form.headline ||
+          (accountType === "organization"
+            ? `${form.companyIndustry || "Technology"} Organization`
+            : "Student / Professional"),
+        location: form.location || "India",
+        about: form.about || "",
+        phone: form.phone || "",
+      };
+
+      if (accountType === "organization") {
+        payload.companyName = form.name;
+        payload.companyIndustry = form.companyIndustry;
+        payload.companyWebsite = form.companyWebsite;
+        payload.hrDetails = {
+          name: form.hrName || form.name,
+          email: form.email,
+          phone: form.phone,
+        };
+        payload.organizationDetails = {
+          name: form.name,
+          website: form.companyWebsite,
+          about: form.about,
+          industry: form.companyIndustry,
+        };
+      }
+
+      await signup(payload);
+      if (accountType === "organization") {
+        navigate("/dashboard");
+      } else {
+        navigate("/home");
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.message || err.message || "Registration failed"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -31,51 +89,175 @@ function Signup() {
 
         <h2>Create your account</h2>
         <p className="signup-subtitle">
-          Join thousands of professionals building their careers.
+          Join thousands of professionals and hiring companies.
         </p>
 
+        {/* Account Type Toggle */}
+        <div className="signup-type-tabs">
+          <button
+            type="button"
+            className={`signup-type-tab ${accountType === "candidate" ? "active" : ""}`}
+            onClick={() => setAccountType("candidate")}
+          >
+            🎓 Candidate / Student
+          </button>
+          <button
+            type="button"
+            className={`signup-type-tab ${accountType === "organization" ? "active" : ""}`}
+            onClick={() => setAccountType("organization")}
+          >
+            🏢 Organization / Company
+          </button>
+        </div>
+
+        {error && (
+          <div
+            style={{
+              color: "#ef4444",
+              background: "#fee2e2",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              fontSize: "13px",
+              marginBottom: "12px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSignup}>
-          <label>Full Name</label>
-          <input
-            name="name"
-            placeholder="Enter your full name"
-            value={form.name}
-            onChange={update}
-            required
-          />
+          {accountType === "candidate" ? (
+            <>
+              <label>Full Name</label>
+              <input
+                name="name"
+                placeholder="Enter your full name"
+                value={form.name}
+                onChange={update}
+                required
+              />
 
-          <label>Professional Headline</label>
-          <input
-            name="headline"
-            placeholder="e.g. Frontend Developer"
-            value={form.headline}
-            onChange={update}
-            required
-          />
+              <label>Professional Headline</label>
+              <input
+                name="headline"
+                placeholder="e.g. Frontend Developer | React Specialist"
+                value={form.headline}
+                onChange={update}
+                required
+              />
 
-          <label>Email Address</label>
-          <input
-            type="email"
-            name="email"
-            placeholder="Enter your email"
-            value={form.email}
-            onChange={update}
-            required
-          />
+              <label>Email Address</label>
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                value={form.email}
+                onChange={update}
+                required
+              />
 
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            placeholder="At least 6 characters"
-            value={form.password}
-            onChange={update}
-            minLength={6}
-            required
-          />
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="At least 6 characters"
+                value={form.password}
+                onChange={update}
+                minLength={6}
+                required
+              />
+            </>
+          ) : (
+            <>
+              <label>Company / Organization Name</label>
+              <input
+                name="name"
+                placeholder="e.g. Acme Tech Solutions"
+                value={form.name}
+                onChange={update}
+                required
+              />
 
-          <button type="submit" className="signup-btn">
-            Create Account
+              <label>Industry / Sector</label>
+              <input
+                name="companyIndustry"
+                placeholder="e.g. Software, Fintech, Healthcare, OSINT"
+                value={form.companyIndustry}
+                onChange={update}
+                required
+              />
+
+              <label>Official Work Email</label>
+              <input
+                type="email"
+                name="email"
+                placeholder="e.g. hr@acmetech.com"
+                value={form.email}
+                onChange={update}
+                required
+              />
+
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="At least 6 characters"
+                value={form.password}
+                onChange={update}
+                minLength={6}
+                required
+              />
+
+              <label>Company Website</label>
+              <input
+                type="url"
+                name="companyWebsite"
+                placeholder="https://company.com"
+                value={form.companyWebsite}
+                onChange={update}
+              />
+
+              <label>Location / Headquarters</label>
+              <input
+                name="location"
+                placeholder="e.g. Bangalore, India (or Remote)"
+                value={form.location}
+                onChange={update}
+              />
+
+              <label>HR / Contact Person Name</label>
+              <input
+                name="hrName"
+                placeholder="e.g. Jane Smith (Lead Recruiter)"
+                value={form.hrName}
+                onChange={update}
+              />
+
+              <label>HR Contact Phone</label>
+              <input
+                name="phone"
+                placeholder="+91 98765 43210"
+                value={form.phone}
+                onChange={update}
+              />
+
+              <label>About the Organization</label>
+              <textarea
+                name="about"
+                placeholder="Brief overview of your company, mission, and culture..."
+                value={form.about}
+                onChange={update}
+                rows={3}
+              />
+            </>
+          )}
+
+          <button type="submit" className="signup-btn" disabled={loading}>
+            {loading
+              ? "Creating Account..."
+              : accountType === "organization"
+              ? "Register Organization"
+              : "Create Account"}
           </button>
         </form>
 

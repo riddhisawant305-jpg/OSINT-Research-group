@@ -252,7 +252,7 @@ export const messages = [
   },
   {
     id: 4,
-    user: users[6],
+    user: users[5],
     preview: "Interview slot confirmed for Friday.",
     time: "Yesterday",
     unread: 0,
@@ -265,12 +265,12 @@ export const messages = [
 ];
 
 export const connections = [
+  { id: 1, user: users[0], mutual: 28, connected: true },
   { id: 2, user: users[1], mutual: 24, connected: true },
   { id: 3, user: users[2], mutual: 41, connected: true },
   { id: 4, user: users[3], mutual: 12, connected: true },
   { id: 5, user: users[4], mutual: 33, connected: false },
   { id: 6, user: users[5], mutual: 18, connected: false },
-  { id: 7, user: users[6], mutual: 7, connected: false },
 ];
 
 export const careerStats = {

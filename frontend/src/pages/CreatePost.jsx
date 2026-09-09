@@ -1,17 +1,33 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image, Video, Calendar, FileText, X } from "lucide-react";
-import { currentUser } from "../data/dummyData";
+import { currentUser as fallbackUser } from "../data/dummyData";
+import { useAuth } from "../context/AuthContext";
+import API from "../api/client";
 import Avatar from "../component/Avatar";
 import "../pages/CreatePost.css";
 
 function CreatePost() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const activeUser = user || fallbackUser;
+
   const [text, setText] = useState("");
   const [privacy, setPrivacy] = useState("Anyone");
+  const [submitting, setSubmitting] = useState(false);
 
-  const publish = () => {
-    navigate("/home");
+  const publish = async () => {
+    if (!text.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await API.post("/posts", { content: text.trim(), privacy });
+      navigate("/home");
+    } catch (err) {
+      console.warn("Could not post to backend:", err.message);
+      navigate("/home");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -25,9 +41,9 @@ function CreatePost() {
         </div>
 
         <div className="create-post-user">
-          <Avatar user={currentUser} size={46} />
+          <Avatar user={activeUser} size={46} />
           <div>
-            <strong>{currentUser.name}</strong>
+            <strong>{activeUser.name}</strong>
             <button
               className="privacy-btn"
               onClick={() =>
@@ -54,8 +70,8 @@ function CreatePost() {
 
         <div className="create-post-footer">
           <span className="char-count">{text.length} / 3000</span>
-          <button className="btn-primary" onClick={publish} disabled={!text.trim()}>
-            Post
+          <button className="btn-primary" onClick={publish} disabled={!text.trim() || submitting}>
+            {submitting ? "Posting..." : "Post"}
           </button>
         </div>
       </div>

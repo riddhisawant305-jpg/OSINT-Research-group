@@ -1,13 +1,55 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Image, Video, Calendar, FileText, Bot, FileBadge, Mic, Map } from "lucide-react";
-import { currentUser, posts } from "../data/dummyData";
+import { currentUser as fallbackUser, posts as fallbackPosts } from "../data/dummyData";
+import { useAuth } from "../context/AuthContext";
+import API from "../api/client";
 import Avatar from "../component/Avatar";
 import PostCard from "../component/PostCard";
 import "./Home.css";
 
 function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const activeUser = user || fallbackUser;
+
+  const [feedPosts, setFeedPosts] = useState(fallbackPosts);
+  const [stats, setStats] = useState({
+    connections: activeUser.connections || 0,
+    posts: activeUser.posts || 0,
+  });
+
+  useEffect(() => {
+    // Fetch live feed posts from backend
+    const fetchPosts = async () => {
+      try {
+        const res = await API.get("/posts");
+        if (res.data && res.data.data && res.data.data.length > 0) {
+          setFeedPosts(res.data.data);
+        }
+      } catch (err) {
+        console.warn("Could not fetch posts from backend:", err.message);
+      }
+    };
+
+    // Fetch live user stats
+    const fetchStats = async () => {
+      try {
+        const res = await API.get("/users/me/dashboard");
+        if (res.data && res.data.data && res.data.data.careerStats) {
+          setStats({
+            connections: res.data.data.careerStats.connectionsCount,
+            posts: res.data.data.careerStats.postsCount,
+          });
+        }
+      } catch (err) {
+        // Fallback to activeUser properties if unauthenticated
+      }
+    };
+
+    fetchPosts();
+    fetchStats();
+  }, []);
 
   const tools = [
     { to: "/mentor", Icon: Bot, label: "AI Career Mentor", color: "#7c3aed" },
@@ -16,23 +58,25 @@ function Home() {
     { to: "/roadmap", Icon: Map, label: "Learning Roadmap", color: "#d97706" },
   ];
 
+  const firstName = activeUser.name ? activeUser.name.split(" ")[0] : "Friend";
+
   return (
     <div className="home-layout">
       <aside className="home-side left">
         <div className="card profile-mini" onClick={() => navigate("/profile")}>
           <div className="profile-mini-cover"></div>
-          <Avatar user={currentUser} size={70} />
-          <strong>{currentUser.name}</strong>
-          <span>{currentUser.headline}</span>
+          <Avatar user={activeUser} size={70} />
+          <strong>{activeUser.name}</strong>
+          <span>{activeUser.headline}</span>
           <div className="profile-mini-stats">
-            <div><strong>{currentUser.connections}</strong><span>Connections</span></div>
-            <div><strong>{currentUser.posts}</strong><span>Posts</span></div>
+            <div><strong>{stats.connections}</strong><span>Connections</span></div>
+            <div><strong>{stats.posts}</strong><span>Posts</span></div>
           </div>
         </div>
         <div className="card network-mini">
           <strong>Network</strong>
           <div className="network-row" onClick={() => navigate("/network")}>
-            <span>Connections</span><span>{currentUser.connections}</span>
+            <span>Connections</span><span>{stats.connections}</span>
           </div>
           <div className="network-row" onClick={() => navigate("/network")}>
             <span>Follows</span><span>85</span>
@@ -43,9 +87,9 @@ function Home() {
       <section className="home-feed">
         <div className="card post-composer">
           <div className="composer-row">
-            <Avatar user={currentUser} size={46} />
+            <Avatar user={activeUser} size={46} />
             <button className="composer-input" onClick={() => navigate("/create-post")}>
-              Start a post, {currentUser.name.split(" ")[0]}?
+              Start a post, {firstName}?
             </button>
           </div>
           <div className="composer-actions">
@@ -56,8 +100,8 @@ function Home() {
           </div>
         </div>
 
-        {posts.map((p) => (
-          <PostCard key={p.id} post={p} />
+        {feedPosts.map((p) => (
+          <PostCard key={p._id || p.id} post={p} />
         ))}
       </section>
 

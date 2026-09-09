@@ -1,16 +1,31 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    navigate("/home");
+    setError("");
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate("/home");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || err.message || "Invalid credentials"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,6 +65,12 @@ function Login() {
             Sign in to your CareerVerse account
           </p>
 
+          {error && (
+            <div style={{ color: "#ef4444", background: "#fee2e2", padding: "8px 12px", borderRadius: "8px", fontSize: "13px", marginBottom: "12px" }}>
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleLogin}>
 
             <label>Email Address</label>
@@ -76,8 +97,8 @@ function Login() {
               Forgot Password?
             </div>
 
-            <button type="submit" className="login-btn">
-              Login
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
             </button>
 
           </form>
