@@ -10,7 +10,21 @@ const API = axios.create({
 // Request interceptor: attach Bearer token
 API.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("cv_token");
+    // If an Authorization header was already explicitly provided, respect it!
+    if (config.headers && config.headers.Authorization) {
+      return config;
+    }
+
+    // Check for admin token first if requesting an admin endpoint or on the admin page
+    const isAdminEndpoint = config.url && config.url.includes("/admin");
+    const isOnAdminPage = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+    const adminToken = localStorage.getItem("cv_admin_token");
+    const regularToken = localStorage.getItem("cv_token");
+
+    const token = (isAdminEndpoint || isOnAdminPage)
+      ? (adminToken || regularToken)
+      : (regularToken || adminToken);
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

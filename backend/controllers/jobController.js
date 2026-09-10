@@ -5,12 +5,12 @@ const mongoose = require("mongoose");
 // Helper to find job by either ObjectId or numericId
 const findJobByAnyId = async (idParam) => {
   if (mongoose.Types.ObjectId.isValid(idParam)) {
-    const job = await Job.findById(idParam).populate("recruiter", "name email");
+    const job = await Job.findById(idParam).populate("recruiter", "name email companyName isVerified");
     if (job) return job;
   }
   const numeric = Number(idParam);
   if (!isNaN(numeric)) {
-    return Job.findOne({ numericId: numeric }).populate("recruiter", "name email");
+    return Job.findOne({ numericId: numeric }).populate("recruiter", "name email companyName isVerified");
   }
   return null;
 };
@@ -36,7 +36,9 @@ const getJobs = async (req, res, next) => {
       query.location = new RegExp(location.trim(), "i");
     }
 
-    const jobs = await Job.find(query).sort({ createdAt: -1 });
+    const jobs = await Job.find(query)
+      .populate("recruiter", "name email companyName isVerified")
+      .sort({ createdAt: -1 });
 
     const formatted = jobs.map((j) => ({
       _id: j._id,
@@ -61,6 +63,7 @@ const getJobs = async (req, res, next) => {
       skills: j.skills,
       applicants: j.applicantsCount || 0,
       recruiter: j.recruiter,
+      isVerified: !!(j.recruiter?.isVerified),
       createdAt: j.createdAt,
     }));
 
@@ -107,6 +110,7 @@ const getJobById = async (req, res, next) => {
       skills: job.skills,
       applicants: job.applicantsCount || 0,
       recruiter: job.recruiter,
+      isVerified: !!(job.recruiter?.isVerified),
       createdAt: job.createdAt,
     };
 
@@ -233,8 +237,14 @@ const updateJob = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
 
-    // Only owner recruiter can edit
-    if (job.recruiter && job.recruiter._id.toString() !== req.user._id.toString()) {
+    // Only owner recruiter or admin can edit
+    const recruiterId = job.recruiter?._id
+      ? job.recruiter._id.toString()
+      : job.recruiter
+      ? job.recruiter.toString()
+      : null;
+
+    if (recruiterId && recruiterId !== req.user._id.toString() && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
         message: "You can only update your own job postings",
@@ -276,7 +286,13 @@ const deleteJob = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
 
-    if (job.recruiter && job.recruiter._id.toString() !== req.user._id.toString()) {
+    const recruiterId = job.recruiter?._id
+      ? job.recruiter._id.toString()
+      : job.recruiter
+      ? job.recruiter.toString()
+      : null;
+
+    if (recruiterId && recruiterId !== req.user._id.toString() && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
         message: "You can only delete your own job postings",

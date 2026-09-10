@@ -78,7 +78,12 @@ const updateMyProfile = async (req, res, next) => {
       companySize,
       hrDetails,
       organizationDetails,
+      hobbies,
     } = req.body;
+
+    if (hobbies !== undefined && Array.isArray(hobbies)) {
+      user.hobbies = Array.from(new Set(hobbies.map(h => String(h).trim()).filter(Boolean)));
+    }
 
     if (name !== undefined) user.name = name.trim();
     if (headline !== undefined) user.headline = headline.trim();
@@ -611,6 +616,12 @@ const getDashboard = async (req, res, next) => {
       };
     }
 
+    let hiredEmployees = [];
+    if (user.role === "recruiter" || user.role === "organization") {
+      const HiredEmployee = require("../models/HiredEmployee");
+      hiredEmployees = await HiredEmployee.find({ organization: userId }).sort("-createdAt");
+    }
+
     res.status(200).json({
       success: true,
       data: {
@@ -636,14 +647,205 @@ const getDashboard = async (req, res, next) => {
           organizationDetails: user.organizationDetails,
           initials: user.initials,
           avatarColor: user.avatarColor,
+          profilePhoto: user.profilePhoto || "",
+          isVerified: !!user.isVerified,
         },
         careerStats,
         recruiterStats,
         postedJobs,
+        hiredEmployees,
         skillProgress,
         recentApplications,
         recentPosts,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Upload profile picture
+// @route   POST /api/users/me/avatar
+// @access  Private
+const uploadAvatar = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    let photoUrl = "";
+    if (req.file) {
+      photoUrl = `/uploads/avatars/${req.file.filename}`;
+    } else if (req.body && req.body.profilePhoto) {
+      photoUrl = req.body.profilePhoto;
+    }
+
+    if (!photoUrl) {
+      return res.status(400).json({ success: false, message: "No image file or photo provided" });
+    }
+
+    user.profilePhoto = photoUrl;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile photo updated successfully",
+      data: user,
+      profilePhoto: photoUrl,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all hired employees for current organization
+// @route   GET /api/users/me/hired-employees
+// @access  Private (Organization/Recruiter)
+const getHiredEmployees = async (req, res, next) => {
+  try {
+    const HiredEmployee = require("../models/HiredEmployee");
+    const hired = await HiredEmployee.find({ organization: req.user._id }).sort("-createdAt");
+    res.status(200).json({
+      success: true,
+      count: hired.length,
+      data: hired,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Add a hired employee manually
+// @route   POST /api/users/me/hired-employees
+// @access  Private (Organization/Recruiter)
+const createHiredEmployee = async (req, res, next) => {
+  try {
+    const HiredEmployee = require("../models/HiredEmployee");
+    const {
+      candidateName,
+      candidateEmail,
+      employeeId,
+      role,
+      salary,
+      hiredDate,
+      joiningDate,
+      resume,
+      resumeFileName,
+      notes,
+      status,
+    } = req.body;
+
+    if (!candidateName || !candidateEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Candidate name and email are required",
+      });
+    }
+
+    const newHired = await HiredEmployee.create({
+      organization: req.user._id,
+      candidateName: candidateName.trim(),
+      candidateEmail: candidateEmail.trim(),
+      employeeId: employeeId ? employeeId.trim() : `CV-EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+      role: role ? role.trim() : "Software Engineer",
+      salary: salary ? salary.trim() : "Competitive",
+      hiredDate: hiredDate ? new Date(hiredDate) : new Date(),
+      joiningDate: joiningDate ? new Date(joiningDate) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      resume: resume || "",
+      resumeFileName: resumeFileName || "Candidate_Resume.pdf",
+      notes: notes ? notes.trim() : "Hired via CareerVerse.",
+      status: status || "Active",
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Hired employee added successfully",
+      data: newHired,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update a hired employee's details
+// @route   PUT /api/users/me/hired-employees/:id
+// @access  Private (Organization/Recruiter)
+const updateHiredEmployee = async (req, res, next) => {
+  try {
+    const HiredEmployee = require("../models/HiredEmployee");
+    const hired = await HiredEmployee.findOne({
+      _id: req.params.id,
+      organization: req.user._id,
+    });
+
+    if (!hired) {
+      return res.status(404).json({
+        success: false,
+        message: "Hired employee record not found",
+      });
+    }
+
+    const {
+      candidateName,
+      candidateEmail,
+      employeeId,
+      role,
+      salary,
+      hiredDate,
+      joiningDate,
+      resume,
+      resumeFileName,
+      notes,
+      status,
+    } = req.body;
+
+    if (candidateName !== undefined) hired.candidateName = candidateName.trim();
+    if (candidateEmail !== undefined) hired.candidateEmail = candidateEmail.trim();
+    if (employeeId !== undefined) hired.employeeId = employeeId.trim();
+    if (role !== undefined) hired.role = role.trim();
+    if (salary !== undefined) hired.salary = salary.trim();
+    if (hiredDate !== undefined) hired.hiredDate = new Date(hiredDate);
+    if (joiningDate !== undefined) hired.joiningDate = new Date(joiningDate);
+    if (resume !== undefined) hired.resume = resume;
+    if (resumeFileName !== undefined) hired.resumeFileName = resumeFileName;
+    if (notes !== undefined) hired.notes = notes.trim();
+    if (status !== undefined) hired.status = status;
+
+    await hired.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Hired employee details updated successfully",
+      data: hired,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete a hired employee record
+// @route   DELETE /api/users/me/hired-employees/:id
+// @access  Private (Organization/Recruiter)
+const deleteHiredEmployee = async (req, res, next) => {
+  try {
+    const HiredEmployee = require("../models/HiredEmployee");
+    const hired = await HiredEmployee.findOneAndDelete({
+      _id: req.params.id,
+      organization: req.user._id,
+    });
+
+    if (!hired) {
+      return res.status(404).json({
+        success: false,
+        message: "Hired employee record not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Candidate removed from Hired list",
+      data: { id: req.params.id },
     });
   } catch (error) {
     next(error);
@@ -667,4 +869,9 @@ module.exports = {
   updateProject,
   deleteProject,
   getDashboard,
+  uploadAvatar,
+  getHiredEmployees,
+  createHiredEmployee,
+  updateHiredEmployee,
+  deleteHiredEmployee,
 };

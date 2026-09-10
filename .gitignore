@@ -29,3 +29,11 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Ignore .txt files ONLY in root folder (OSINT-Research-group)
+/*.txt
+

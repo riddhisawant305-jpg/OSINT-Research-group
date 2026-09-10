@@ -1,4 +1,0 @@
-
-And on the job screen the user should get a button for Tailoring their resume as per the job details and description and Required skills
-
-Like while applying the job the user should get two options " Apply with the saved resume" and " Tailor the resume as per the job and apply"

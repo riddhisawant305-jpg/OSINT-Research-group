@@ -69,7 +69,12 @@ export function AuthProvider({ children }) {
     throw new Error(res.data.message || "Registration failed");
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await API.post("/auth/logout");
+    } catch (e) {
+      // ignore network errors on logout
+    }
     setToken(null);
     setUser(defaultDummyUser);
     localStorage.removeItem("cv_token");

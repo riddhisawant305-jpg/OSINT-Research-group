@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   BadgeCheck,
@@ -16,6 +16,7 @@ import {
   Mail,
   Phone,
   ArrowLeft,
+  Camera,
 } from "lucide-react";
 import { currentUser as fallbackUser } from "../data/dummyData";
 import { useAuth } from "../context/AuthContext";
@@ -23,6 +24,7 @@ import API from "../api/client";
 import Avatar from "../component/Avatar";
 import PostCard from "../component/PostCard";
 import ResumeOptimizerModal from "../component/ResumeOptimizerModal";
+import VerifiedBadge from "../component/VerifiedBadge";
 import "./Profile.css";
 
 function Profile() {
@@ -38,18 +40,51 @@ function Profile() {
   const [myPosts, setMyPosts] = useState([]);
   const [connectionsCount, setConnectionsCount] = useState(0);
   const [optimizerOpen, setOptimizerOpen] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const avatarInputRef = useRef(null);
 
-  // Download helper for Base64 Data URI or file URLs
-  const handleDownloadResume = (resumeData, filename) => {
-    if (!resumeData) return;
-    const downloadName = filename || "Resume.pdf";
-    const link = document.createElement("a");
-    link.href = resumeData;
-    link.download = downloadName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Please select an image smaller than 10MB");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    try {
+      const res = await API.post("/users/me/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (res.data && res.data.profilePhoto) {
+        const updated = { ...profileUser, profilePhoto: res.data.profilePhoto };
+        setProfileUser(updated);
+        updateUser(updated);
+      }
+    } catch (err) {
+      console.warn("Avatar multipart failed, attempting base64:", err.message);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await API.put("/users/me", { profilePhoto: reader.result });
+          if (res.data && res.data.data) {
+            setProfileUser(res.data.data);
+            updateUser(res.data.data);
+          }
+        } catch (e2) {
+          alert("Failed to update profile picture: " + (e2.response?.data?.message || e2.message));
+        } finally {
+          setUploadingPhoto(false);
+        }
+      };
+      reader.readAsDataURL(file);
+      return;
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   useEffect(() => {
@@ -164,6 +199,32 @@ function Profile() {
     );
   }
 
+  const handleDownloadResume = (resumePath, filename) => {
+    if (!resumePath) return;
+    const downloadUrl =
+      resumePath.startsWith("http") || resumePath.startsWith("data:")
+        ? resumePath
+        : `http://localhost:5000${resumePath.startsWith("/") ? "" : "/"}${resumePath}`;
+
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = filename || "Resume.pdf";
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    try {
+      await API.delete(`/posts/${postId}`);
+      setMyPosts((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+    } catch (err) {
+      alert("Failed to delete post: " + (err.response?.data?.message || err.message));
+    }
+  };
+
   const activeUser = profileUser;
   const isOrganization = activeUser.role === "organization";
 
@@ -178,7 +239,15 @@ function Profile() {
     const hr = activeUser.hrDetails || {};
 
     return (
-      <div className="profile-layout org-layout">
+      <>
+        <input
+          type="file"
+          ref={avatarInputRef}
+          accept="image/*"
+          onChange={handleAvatarUpload}
+          style={{ display: "none" }}
+        />
+        <div className="profile-layout org-layout">
         {!isOwnProfile && (
           <div style={{ gridColumn: "1 / -1" }}>
             <button className="back-btn" onClick={() => navigate(-1)}>
@@ -194,16 +263,56 @@ function Profile() {
             <div className="profile-hero-body">
               <div
                 className="org-logo-badge"
-                style={{ background: activeUser.avatarColor || "#2563eb" }}
+                style={{
+                  background: activeUser.avatarColor || "#2563eb",
+                  position: "relative",
+                  cursor: isOwnProfile ? "pointer" : "default",
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onClick={() => isOwnProfile && avatarInputRef.current && avatarInputRef.current.click()}
+                title={isOwnProfile ? "Click to change company logo" : undefined}
               >
-                {orgCompany.slice(0, 2).toUpperCase()}
+                {activeUser.profilePhoto ? (
+                  <img
+                    src={
+                      activeUser.profilePhoto.startsWith("http") || activeUser.profilePhoto.startsWith("data:")
+                        ? activeUser.profilePhoto
+                        : `http://localhost:5000${activeUser.profilePhoto.startsWith("/") ? "" : "/"}${activeUser.profilePhoto}`
+                    }
+                    alt={orgCompany}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                ) : (
+                  orgCompany.slice(0, 2).toUpperCase()
+                )}
+                {isOwnProfile && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: "rgba(0,0,0,0.55)",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: "3px 0",
+                    }}
+                  >
+                    <Camera size={14} color="#ffffff" />
+                  </div>
+                )}
               </div>
 
               <div className="org-hero-title">
-                <h1>{orgCompany}</h1>
-                <span className="org-verified-pill">
-                  <Building size={14} /> Verified Organization
-                </span>
+                <h1 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  {orgCompany}
+                  {activeUser.isVerified && <VerifiedBadge size={22} />}
+                </h1>
               </div>
 
               <p className="headline">{orgIndustry} • Hiring Partner</p>
@@ -336,8 +445,9 @@ function Profile() {
           )}
         </div>
       </div>
-    );
-  }
+    </>
+  );
+}
 
   // Candidate View Rendering
   const skillsList = Array.isArray(activeUser.skills)
@@ -368,21 +478,59 @@ function Profile() {
     : "";
 
   return (
-    <div className="profile-layout">
-      {!isOwnProfile && (
-        <div style={{ gridColumn: "1 / -1" }}>
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            <ArrowLeft size={18} /> Back
-          </button>
-        </div>
-      )}
+    <>
+      <input
+        type="file"
+        ref={avatarInputRef}
+        accept="image/*"
+        onChange={handleAvatarUpload}
+        style={{ display: "none" }}
+      />
+      <div className="profile-layout">
+        {!isOwnProfile && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <button className="back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeft size={18} /> Back
+            </button>
+          </div>
+        )}
 
-      <div className="profile-column">
-        {/* Hero Card */}
-        <div className="card profile-hero">
-          <div className="profile-cover"></div>
-          <div className="profile-hero-body">
-            <Avatar user={activeUser} size={120} />
+        <div className="profile-column">
+          {/* Hero Card */}
+          <div className="card profile-hero">
+            <div className="profile-cover"></div>
+            <div className="profile-hero-body">
+              <div
+                style={{
+                  position: "relative",
+                  display: "inline-block",
+                  cursor: isOwnProfile ? "pointer" : "default",
+                }}
+                onClick={() => isOwnProfile && avatarInputRef.current && avatarInputRef.current.click()}
+                title={isOwnProfile ? "Click to change profile picture" : undefined}
+              >
+                <Avatar user={activeUser} size={120} />
+                {isOwnProfile && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 4,
+                      right: 4,
+                      background: "var(--cv-blue, #2563eb)",
+                      borderRadius: "50%",
+                      width: 32,
+                      height: 32,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "2px solid #ffffff",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <Camera size={16} color="#ffffff" />
+                  </div>
+                )}
+              </div>
 
             {isOwnProfile && (
               <button
@@ -395,7 +543,10 @@ function Profile() {
               </button>
             )}
 
-            <h1>{activeUser.name}</h1>
+            <h1 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {activeUser.name}
+              {activeUser.isVerified && <VerifiedBadge size={22} />}
+            </h1>
             <p className="headline">{activeUser.headline}</p>
             <div className="meta-line">
               <span>
@@ -621,7 +772,13 @@ function Profile() {
       <div className="profile-posts">
         <h2 className="section-title">Activity</h2>
         {myPosts.length ? (
-          myPosts.map((p) => <PostCard key={p._id || p.id} post={p} />)
+          myPosts.map((p) => (
+            <PostCard
+              key={p._id || p.id}
+              post={p}
+              onDelete={isOwnProfile ? () => handleDeletePost(p._id || p.id) : undefined}
+            />
+          ))
         ) : (
           <div className="card empty-state">No posts yet.</div>
         )}
@@ -634,7 +791,8 @@ function Profile() {
           onApplySuccess={(updated) => updateUser(updated)}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

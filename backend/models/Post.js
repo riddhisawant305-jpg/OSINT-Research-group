@@ -29,7 +29,7 @@ const postSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: [true, "Post content is required"],
+      default: "",
       trim: true,
     },
     privacy: {
@@ -38,6 +38,15 @@ const postSchema = new mongoose.Schema(
       default: "Anyone",
     },
     media: {
+      type: String,
+      default: "",
+    },
+    mediaType: {
+      type: String,
+      enum: ["image", "video", "document", "none"],
+      default: "none",
+    },
+    mediaName: {
       type: String,
       default: "",
     },

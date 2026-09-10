@@ -1,5 +1,6 @@
 const Post = require("../models/Post");
 const mongoose = require("mongoose");
+const { createNotification } = require("./notificationController");
 
 // @desc    Get all posts (feed)
 // @route   GET /api/posts
@@ -7,8 +8,8 @@ const mongoose = require("mongoose");
 const getPosts = async (req, res, next) => {
   try {
     const posts = await Post.find()
-      .populate("author", "name headline avatarColor profilePhoto")
-      .populate("comments.user", "name headline avatarColor profilePhoto")
+      .populate("author", "name headline avatarColor profilePhoto isVerified")
+      .populate("comments.user", "name headline avatarColor profilePhoto isVerified")
       .sort({ createdAt: -1 });
 
     // Format posts to match frontend PostCard expectations
@@ -17,6 +18,7 @@ const getPosts = async (req, res, next) => {
         name: "CareerVerse Member",
         headline: "Professional",
         avatarColor: "#2563eb",
+        isVerified: false,
       };
 
       const diff = Date.now() - new Date(p.createdAt).getTime();
@@ -34,12 +36,30 @@ const getPosts = async (req, res, next) => {
           headline: author.headline,
           avatarColor: author.avatarColor || "#2563eb",
           profilePhoto: author.profilePhoto || "",
+          isVerified: !!author.isVerified,
         },
         time: timeStr,
-        content: p.content,
+        content: p.content || "",
+        media: p.media || "",
+        mediaType: p.mediaType || (p.media ? "image" : "none"),
+        mediaName: p.mediaName || "",
         likes: p.likes ? p.likes.length : 0,
         liked: req.user ? p.likes.some((id) => id.toString() === req.user._id.toString()) : false,
         comments: p.comments ? p.comments.length : 0,
+        commentsList: (p.comments || []).map((c) => ({
+          _id: c._id,
+          text: c.text,
+          createdAt: c.createdAt,
+          user: c.user
+            ? {
+                name: c.user.name,
+                headline: c.user.headline,
+                avatarColor: c.user.avatarColor || "#2563eb",
+                profilePhoto: c.user.profilePhoto || "",
+                isVerified: !!c.user.isVerified,
+              }
+            : null,
+        })),
         shares: p.shares || 0,
         createdAt: p.createdAt,
       };
@@ -64,8 +84,8 @@ const getPostById = async (req, res, next) => {
     }
 
     const post = await Post.findById(req.params.id)
-      .populate("author", "name headline avatarColor profilePhoto")
-      .populate("comments.user", "name headline avatarColor profilePhoto");
+      .populate("author", "name headline avatarColor profilePhoto isVerified")
+      .populate("comments.user", "name headline avatarColor profilePhoto isVerified");
 
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found" });
@@ -82,23 +102,43 @@ const getPostById = async (req, res, next) => {
 // @access  Private
 const createPost = async (req, res, next) => {
   try {
-    const { content, privacy, media } = req.body;
+    const { content, privacy } = req.body;
+    let media = req.body.media || "";
+    let mediaType = req.body.mediaType || "none";
+    let mediaName = req.body.mediaName || "";
 
-    if (!content || !content.trim()) {
+    if (req.file) {
+      media = `/uploads/posts/${req.file.filename}`;
+      mediaName = req.file.originalname;
+      const mime = req.file.mimetype || "";
+      if (mime.startsWith("image/")) {
+        mediaType = "image";
+      } else if (mime.startsWith("video/")) {
+        mediaType = "video";
+      } else {
+        mediaType = "document";
+      }
+    }
+
+    const trimmedContent = (content || "").trim();
+
+    if (!trimmedContent && !media) {
       return res.status(400).json({
         success: false,
-        message: "Post content is required",
+        message: "Please provide post text or attach an image, video, or document",
       });
     }
 
     const post = await Post.create({
       author: req.user._id,
-      content: content.trim(),
+      content: trimmedContent,
       privacy: privacy || "Anyone",
-      media: media || "",
+      media,
+      mediaType,
+      mediaName,
     });
 
-    await post.populate("author", "name headline avatarColor profilePhoto");
+    await post.populate("author", "name headline avatarColor profilePhoto isVerified");
 
     res.status(201).json({
       success: true,
@@ -161,7 +201,7 @@ const deletePost = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Post not found" });
     }
 
-    if (post.author.toString() !== req.user._id.toString()) {
+    if (post.author.toString() !== req.user._id.toString() && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
         message: "You can only delete your own posts",
@@ -200,6 +240,17 @@ const toggleLike = async (req, res, next) => {
       post.likes = post.likes.filter((id) => id.toString() !== userIdStr);
     } else {
       post.likes.push(req.user._id);
+
+      if (post.author.toString() !== req.user._id.toString()) {
+        await createNotification({
+          recipient: post.author,
+          sender: req.user._id,
+          type: "like",
+          title: "Post Liked",
+          text: `${req.user.name} liked your post.`,
+          link: `/profile/${post.author}`,
+        });
+      }
     }
 
     await post.save();
@@ -242,6 +293,17 @@ const addComment = async (req, res, next) => {
     post.comments.push(comment);
     await post.save();
     await post.populate("comments.user", "name headline avatarColor profilePhoto");
+
+    if (post.author.toString() !== req.user._id.toString()) {
+      await createNotification({
+        recipient: post.author,
+        sender: req.user._id,
+        type: "comment",
+        title: "New Comment",
+        text: `${req.user.name} commented: "${text.trim().slice(0, 40)}"`,
+        link: `/profile/${post.author}`,
+      });
+    }
 
     res.status(201).json({
       success: true,

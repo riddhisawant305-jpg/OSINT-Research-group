@@ -1,6 +1,7 @@
 const Application = require("../models/Application");
 const Job = require("../models/Job");
 const mongoose = require("mongoose");
+const { createNotification } = require("./notificationController");
 
 // Helper to find job by either ObjectId or numericId
 const findJobByAnyId = async (idParam) => {
@@ -228,6 +229,56 @@ const updateApplicationStatus = async (req, res, next) => {
 
     application.status = status;
     await application.save();
+
+    // Auto-add candidate to 'Hired from CareerVerse' when status is Accepted
+    if (status === "Accepted") {
+      try {
+        const HiredEmployee = require("../models/HiredEmployee");
+        const User = require("../models/User");
+
+        let existingHired = await HiredEmployee.findOne({
+          organization: req.user._id,
+          application: application._id,
+        });
+
+        if (!existingHired) {
+          const applicantUser = await User.findById(application.applicant);
+          const autoEmpId = `CV-EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+          await HiredEmployee.create({
+            organization: req.user._id,
+            candidate: application.applicant,
+            application: application._id,
+            jobId: application.job?._id ? application.job._id.toString() : "",
+            candidateName: application.name || applicantUser?.name || "Candidate",
+            candidateEmail: application.email || applicantUser?.email || "",
+            employeeId: autoEmpId,
+            role: application.job?.title || "Software Engineer",
+            salary: application.job?.salary || "Competitive",
+            hiredDate: new Date(),
+            joiningDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+            resume: application.resume || applicantUser?.resume || "",
+            resumeFileName: application.resumeFileName || applicantUser?.resumeFileName || "Candidate_Resume.pdf",
+            notes: `Accepted through CareerVerse on ${new Date().toLocaleDateString()} for ${application.job?.title || "Role"}.`,
+            status: "Active",
+          });
+        }
+      } catch (hiredErr) {
+        console.error("Failed to auto-create HiredEmployee:", hiredErr.message);
+      }
+    }
+
+    // Notify the candidate in the Jobs section
+    const orgName = req.user.companyName || req.user.name || "The employer";
+    const jobTitle = application.job?.title || "Job Position";
+    await createNotification({
+      recipient: application.applicant,
+      sender: req.user._id,
+      type: "job",
+      title: `Application Update: ${jobTitle}`,
+      text: `Your application for "${jobTitle}" was updated to "${status}" by ${orgName}.`,
+      link: "/dashboard",
+    });
 
     res.status(200).json({
       success: true,

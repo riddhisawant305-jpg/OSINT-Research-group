@@ -10,22 +10,46 @@ import {
   User,
   Edit3,
   LogOut,
+  Award,
 } from "lucide-react";
 import { currentUser as fallbackUser } from "../data/dummyData";
 import { useAuth } from "../context/AuthContext";
+import API from "../api/client";
 import Avatar from "./Avatar";
-import { unreadNotifications } from "../data/dummyData";
 import "./Navbar.css";
 
 export function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const activeUser = user || fallbackUser;
-  const unread = unreadNotifications || 0;
+  const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isClickOpen, setIsClickOpen] = useState(false);
   const dropdownRef = useRef(null);
   const closeTimerRef = useRef(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchUnread = async () => {
+      try {
+        const res = await API.get("/notifications");
+        if (isMounted && res.data && typeof res.data.unreadCount === "number") {
+          setUnreadCount(res.data.unreadCount);
+        }
+      } catch (e) {
+        // unauthenticated or offline
+      }
+    };
+
+    if (user) {
+      fetchUnread();
+      const interval = setInterval(fetchUnread, 20000);
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }
+  }, [user]);
 
   const clearCloseTimer = () => {
     if (closeTimerRef.current) {
@@ -82,13 +106,20 @@ export function Navbar() {
     };
   }, []);
 
+  const isOrg = user?.role === "organization" || user?.role === "recruiter";
+
   const links = [
     { to: "/home", label: "Home", Icon: Home },
-    { to: "/jobs", label: "Jobs", Icon: Briefcase },
+    ...(!isOrg ? [{ to: "/jobs", label: "Jobs", Icon: Briefcase }] : []),
     { to: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
-    { to: "/notifications", label: "Notifications", Icon: Bell, badge: unread },
+    ...(isOrg ? [{ to: "/hired", label: "Hired", Icon: Award }] : []),
+    { to: "/notifications", label: "Notifications", Icon: Bell, badge: unreadCount },
     { to: "/network", label: "Network", Icon: Users },
   ];
+
+  if (user?.role === "admin") {
+    links.push({ to: "/admin", label: "Admin Panel", Icon: LayoutDashboard });
+  }
 
   return (
     <header className="navbar">
@@ -170,6 +201,19 @@ export function Navbar() {
                 <Edit3 size={16} />
                 <span>Edit profile</span>
               </button>
+              {isOrg && (
+                <button
+                  type="button"
+                  className="navbar-dropdown-item"
+                  onClick={() => {
+                    handleClose();
+                    navigate("/hired");
+                  }}
+                >
+                  <Award size={16} />
+                  <span>Hired Candidates</span>
+                </button>
+              )}
               <div className="navbar-dropdown-divider"></div>
               <button
                 type="button"

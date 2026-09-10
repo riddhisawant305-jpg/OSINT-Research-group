@@ -103,8 +103,13 @@ function ResumeOptimizerModal({ isOpen, onClose, onApplySuccess }) {
         phone: extractedData.phone,
         education: extractedData.education,
         skills: extractedData.skills || [],
+        hobbies: extractedData.hobbies || [],
         experience: extractedData.experience || [],
         projects: extractedData.projects || [],
+        resume: extractedData.resume || "",
+        resumeFileName: extractedData.resumeFileName || "",
+        resumeFileType: extractedData.resumeFileType || "",
+        resumeUpdatedAt: new Date(),
       };
 
       const res = await API.put("/users/me", payload);
@@ -147,7 +152,7 @@ function ResumeOptimizerModal({ isOpen, onClose, onApplySuccess }) {
             </div>
             <div>
               <h3>AI Resume-to-Profile Optimizer</h3>
-              <p>Powered by Google Gemini — upload your resume to optimize your profile</p>
+              <p>Powered by CareerVerse Agentic AI Model — upload your resume to optimize your profile</p>
             </div>
           </div>
           <button className="resume-modal-close" onClick={handleClose}>
@@ -231,7 +236,7 @@ function ResumeOptimizerModal({ isOpen, onClose, onApplySuccess }) {
                   {loading ? (
                     <>
                       <div className="resume-spinner"></div>
-                      <span>Gemini is analyzing...</span>
+                      <span>Agentic AI is analyzing...</span>
                     </>
                   ) : (
                     <>
@@ -278,6 +283,21 @@ function ResumeOptimizerModal({ isOpen, onClose, onApplySuccess }) {
                       {extractedData.skills.map((skill, i) => (
                         <span key={i} className="skill-pill">
                           {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {Array.isArray(extractedData.hobbies) && extractedData.hobbies.length > 0 && (
+                  <div className="extracted-item">
+                    <span className="extracted-label">
+                      <Sparkles size={14} /> Hobbies & Interests ({extractedData.hobbies.length})
+                    </span>
+                    <div className="extracted-tags">
+                      {extractedData.hobbies.map((hobby, i) => (
+                        <span key={i} className="skill-pill" style={{ background: "#ecfdf5", color: "#047857", borderColor: "#a7f3d0" }}>
+                          {hobby}
                         </span>
                       ))}
                     </div>

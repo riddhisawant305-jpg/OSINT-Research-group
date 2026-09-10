@@ -21,6 +21,7 @@ const { authorize } = require("../middleware/roleMiddleware");
 // Job listing & details
 router.get("/", getJobs);
 router.get("/my-jobs", protect, authorize("recruiter", "organization"), getMyPostedJobs);
+router.get("/saved", protect, getMySavedJobs);
 router.get("/:id", getJobById);
 
 // Recruiter actions

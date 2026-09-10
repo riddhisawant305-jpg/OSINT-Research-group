@@ -186,10 +186,14 @@ const seedData = async () => {
     }
 
     console.log("Database seeding completed successfully.");
-    process.exit(0);
+    if (require.main === module) {
+      process.exit(0);
+    }
   } catch (error) {
     console.error("Error during database seed:", error);
-    process.exit(1);
+    if (require.main === module) {
+      process.exit(1);
+    }
   }
 };
 

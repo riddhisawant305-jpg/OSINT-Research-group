@@ -17,6 +17,8 @@ function EditProfile() {
     ? activeUser.skills.join(", ")
     : activeUser.skills || "";
 
+  const isOrg = activeUser.role === "organization" || activeUser.role === "recruiter";
+
   const [form, setForm] = useState({
     name: activeUser.name || "",
     headline: activeUser.headline || "",
@@ -26,6 +28,13 @@ function EditProfile() {
     about: activeUser.about || "",
     education: activeUser.education || "",
     skills: initialSkills,
+    companyName: activeUser.companyName || activeUser.name || "",
+    companyIndustry: activeUser.companyIndustry || activeUser.organizationDetails?.industry || "",
+    companyWebsite: activeUser.companyWebsite || activeUser.organizationDetails?.website || "",
+    companySize: activeUser.companySize || "11-50 employees",
+    hrName: activeUser.hrDetails?.name || activeUser.name || "",
+    hrEmail: activeUser.hrDetails?.email || activeUser.email || "",
+    hrPhone: activeUser.hrDetails?.phone || activeUser.phone || "",
   });
 
   const [profilePhoto, setProfilePhoto] = useState(activeUser.profilePhoto || "");
@@ -65,13 +74,30 @@ function EditProfile() {
 
   const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handlePhotoChange = (e) => {
+  const handlePhotoChange = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Please select an image smaller than 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Please select an image smaller than 10MB");
       return;
     }
+
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    try {
+      const res = await API.post("/users/me/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (res.data && res.data.profilePhoto) {
+        setProfilePhoto(res.data.profilePhoto);
+        updateUser({ profilePhoto: res.data.profilePhoto });
+        return;
+      }
+    } catch (err) {
+      console.warn("Direct avatar upload fallback to base64:", err.message);
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       setProfilePhoto(reader.result);
@@ -167,6 +193,21 @@ function EditProfile() {
       profilePhoto: profilePhoto,
       experience: validExperiences,
       projects: validProjects,
+      companyName: form.companyName,
+      companyIndustry: form.companyIndustry,
+      companyWebsite: form.companyWebsite,
+      companySize: form.companySize,
+      hrDetails: {
+        name: form.hrName,
+        email: form.hrEmail,
+        phone: form.hrPhone,
+      },
+      organizationDetails: {
+        ...activeUser.organizationDetails,
+        industry: form.companyIndustry,
+        website: form.companyWebsite,
+        about: form.about,
+      },
     };
 
     try {
@@ -195,15 +236,17 @@ function EditProfile() {
           </button>
           <h1 className="section-title">Edit Profile</h1>
         </div>
-        <button
-          type="button"
-          className="btn-outline ai-opt-header-btn"
-          style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", borderRadius: "10px", borderColor: "#7c3aed", color: "#7c3aed", fontWeight: "600" }}
-          onClick={() => setOptimizerOpen(true)}
-          title="Upload your resume to automatically fill all fields with Gemini AI"
-        >
-          <Sparkles size={15} color="#7c3aed" /> Auto-Fill with AI Resume
-        </button>
+        {!isOrg && (
+          <button
+            type="button"
+            className="btn-outline ai-opt-header-btn"
+            style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", padding: "8px 14px", borderRadius: "10px", borderColor: "#7c3aed", color: "#7c3aed", fontWeight: "600" }}
+            onClick={() => setOptimizerOpen(true)}
+            title="Upload your resume to automatically fill all fields with Gemini AI"
+          >
+            <Sparkles size={15} color="#7c3aed" /> Auto-Fill with AI Resume
+          </button>
+        )}
       </div>
 
       <form className="card edit-form" onSubmit={save}>
@@ -224,7 +267,13 @@ function EditProfile() {
           >
             {profilePhoto ? (
               <img
-                src={profilePhoto}
+                src={
+                  profilePhoto.startsWith("http") ||
+                  profilePhoto.startsWith("data:") ||
+                  profilePhoto.startsWith("blob:")
+                    ? profilePhoto
+                    : `http://localhost:5000${profilePhoto.startsWith("/") ? "" : "/"}${profilePhoto}`
+                }
                 alt="Profile preview"
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
@@ -256,10 +305,44 @@ function EditProfile() {
           )}
         </div>
 
-        <label>Full Name</label>
+        {isOrg && (
+          <div style={{ background: "#f0f9ff", padding: "16px", borderRadius: "10px", border: "1px solid #bae6fd", marginBottom: "16px" }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", color: "#0369a1" }}>Organization & Hiring Information</h3>
+            
+            <label style={{ fontWeight: "600", fontSize: "13px" }}>Company / Organization Name</label>
+            <input name="companyName" value={form.companyName} onChange={update} placeholder="e.g. Acme Corp" />
+
+            <label style={{ fontWeight: "600", fontSize: "13px" }}>Company Size (Employee Numbers)</label>
+            <select name="companySize" value={form.companySize} onChange={update} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--cv-border)", marginBottom: "14px", background: "#fff" }}>
+              <option value="1-10 employees">1-10 employees</option>
+              <option value="11-50 employees">11-50 employees</option>
+              <option value="51-200 employees">51-200 employees</option>
+              <option value="201-500 employees">201-500 employees</option>
+              <option value="501-1000 employees">501-1000 employees</option>
+              <option value="1000+ employees">1000+ employees</option>
+            </select>
+
+            <label style={{ fontWeight: "600", fontSize: "13px" }}>Company Industry</label>
+            <input name="companyIndustry" value={form.companyIndustry} onChange={update} placeholder="e.g. Software & Technology" />
+
+            <label style={{ fontWeight: "600", fontSize: "13px" }}>Company Website</label>
+            <input name="companyWebsite" value={form.companyWebsite} onChange={update} placeholder="e.g. https://company.com" />
+
+            <label style={{ fontWeight: "600", fontSize: "13px" }}>HR Contact Person</label>
+            <input name="hrName" value={form.hrName} onChange={update} placeholder="HR Manager Name" />
+
+            <label style={{ fontWeight: "600", fontSize: "13px" }}>HR Email Address</label>
+            <input name="hrEmail" type="email" value={form.hrEmail} onChange={update} placeholder="recruitment@company.com" />
+
+            <label style={{ fontWeight: "600", fontSize: "13px" }}>HR Phone Number</label>
+            <input name="hrPhone" value={form.hrPhone} onChange={update} placeholder="+91 98765 43210" />
+          </div>
+        )}
+
+        <label>{isOrg ? "Organization Contact Name" : "Full Name"}</label>
         <input name="name" value={form.name} onChange={update} />
 
-        <label>Professional Headline</label>
+        <label>{isOrg ? "Tagline / Headline" : "Professional Headline"}</label>
         <input name="headline" value={form.headline} onChange={update} />
 
         <label>Location</label>
@@ -274,10 +357,12 @@ function EditProfile() {
         <label>About</label>
         <textarea name="about" rows={4} value={form.about} onChange={update} />
 
-        <label>Education</label>
-        <input name="education" value={form.education} onChange={update} />
+        {!isOrg && (
+          <>
+            <label>Education</label>
+            <input name="education" value={form.education} onChange={update} />
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "18px", marginBottom: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "18px", marginBottom: "8px" }}>
           <label style={{ margin: 0, fontSize: "14px", fontWeight: "700" }}>Experience</label>
           <button
             type="button"
@@ -497,6 +582,8 @@ function EditProfile() {
 
         <label>Skills (comma separated)</label>
         <input name="skills" value={form.skills} onChange={update} />
+          </>
+        )}
 
         <div className="edit-form-actions">
           <button type="button" className="btn-outline" onClick={() => navigate("/profile")}>

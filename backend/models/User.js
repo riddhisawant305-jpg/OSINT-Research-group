@@ -94,6 +94,11 @@ const userSchema = new mongoose.Schema(
       default: [],
     },
 
+    hobbies: {
+      type: [String],
+      default: [],
+    },
+
     // Matches the string field in EditProfile.jsx form
     education: {
       type: String,
@@ -151,8 +156,29 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["student", "recruiter", "organization"],
+      enum: ["student", "recruiter", "organization", "admin"],
       default: "student",
+    },
+
+    isLoggedIn: {
+      type: Boolean,
+      default: false,
+    },
+
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+
+    // Official CareerVerse verification badge
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    verifiedAt: {
+      type: Date,
+      default: null,
     },
 
     // Organization specific details

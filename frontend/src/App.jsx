@@ -20,8 +20,10 @@ import CreatePost from "./pages/CreatePost";
 import Mentor from "./pages/Mentor";
 import ResumeAnalyzer from "./pages/ResumeAnalyzer";
 import MockInterview from "./pages/MockInterview";
-import Roadmap from "./pages/Roadmap";
+import PracticeInterview from "./pages/PracticeInterview";
 import Dashboard from "./pages/Dashboard";
+import HiredEmployees from "./pages/HiredEmployees";
+import AdminDashboard from "./pages/AdminDashboard";
 import { AuthProvider } from "./context/AuthContext";
 import ErrorBoundary from "./component/ErrorBoundary";
 
@@ -34,6 +36,7 @@ function App() {
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/admin" element={<AdminDashboard />} />
 
           <Route element={<AppLayout />}>
             <Route path="/home" element={<Home />} />
@@ -49,9 +52,11 @@ function App() {
 
             <Route path="/mentor" element={<Mentor />} />
             <Route path="/resume" element={<ResumeAnalyzer />} />
-            <Route path="/interview" element={<MockInterview />} />
-            <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/interview" element={<PracticeInterview />} />
+            <Route path="/practice-interview" element={<PracticeInterview />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/hired" element={<HiredEmployees />} />
+            <Route path="/hired-employees" element={<HiredEmployees />} />
           </Route>
 
           <Route path="*" element={<Welcome />} />

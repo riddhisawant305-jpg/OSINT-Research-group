@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bot, Send, Sparkles, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import API from "../api/client";
@@ -23,13 +24,20 @@ const cannedFallback = {
 };
 
 function Mentor() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const firstName = user?.name ? user.name.split(" ")[0] : "there";
+
+  useEffect(() => {
+    if (user && (user.role === "organization" || user.role === "recruiter")) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   const [messages, setMessages] = useState([
     {
       from: "bot",
-      text: `Hi ${firstName}! I'm your AI Career Mentor. 🤖 Ask me anything about your career, skills, interviews, or resume.`,
+      text: `Hi ${firstName}! I'm your Career Mentor. Ask me anything about your career path, skills to learn, interview preparation, or resume.`,
     },
   ]);
   const [input, setInput] = useState("");
@@ -37,11 +45,16 @@ function Mentor() {
 
   const fallbackReply = (q) => {
     const lower = q.toLowerCase();
+    if (/what is my name|who am i/i.test(lower)) {
+      return user?.name
+        ? `Your name is ${user.name}! You are preparing for software engineering roles. How can I help you today?`
+        : "I don't have your name saved in your profile yet, but you can update it in Profile settings anytime!";
+    }
     if (lower.includes("interview")) return cannedFallback.interview;
     if (lower.includes("skill")) return cannedFallback.skills;
     if (lower.includes("resume")) return cannedFallback.resume;
     if (lower.includes("career") || lower.includes("path")) return cannedFallback.career;
-    return "Based on your CareerVerse profile, focus on building high-impact projects, mastering core software fundamentals, and tailoring your experience with quantifiable achievements.";
+    return "Looking at your background, I recommend focusing on building high-impact projects, mastering core software fundamentals, and practicing technical interviews.";
   };
 
   const send = async (text) => {
@@ -70,19 +83,7 @@ function Mentor() {
         setMessages((m) => [...m, { from: "bot", text: fallbackReply(q) }]);
       }
     } catch (err) {
-      // If Gemini key is not configured, show helpful notice while providing guidance
-      const serverMsg = err.response?.data?.message;
-      if (serverMsg && serverMsg.includes("GEMINI_API_KEY")) {
-        setMessages((m) => [
-          ...m,
-          {
-            from: "bot",
-            text: `(Notice: GEMINI_API_KEY is not configured in backend/.env yet.)\n\n${fallbackReply(q)}`,
-          },
-        ]);
-      } else {
-        setMessages((m) => [...m, { from: "bot", text: fallbackReply(q) }]);
-      }
+      setMessages((m) => [...m, { from: "bot", text: fallbackReply(q) }]);
     } finally {
       setTyping(false);
     }
@@ -139,7 +140,7 @@ function Mentor() {
       </div>
 
       <div className="mentor-note">
-        <Sparkles size={14} /> Powered by CareerVerse AI & Google Gemini
+        <Sparkles size={14} /> Powered by CareerVerse Agentic Career AI
       </div>
     </div>
   );

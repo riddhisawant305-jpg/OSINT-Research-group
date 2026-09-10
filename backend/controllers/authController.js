@@ -88,6 +88,8 @@ const register = async (req, res, next) => {
       companySize: companySize ? companySize.trim() : "",
       hrDetails: hrDetails || {},
       organizationDetails: organizationDetails || {},
+      isLoggedIn: true,
+      lastLogin: new Date(),
     });
 
     const token = generateToken(user._id);
@@ -98,6 +100,8 @@ const register = async (req, res, next) => {
       email: user.email,
       headline: user.headline,
       role: user.role,
+      isLoggedIn: true,
+      lastLogin: user.lastLogin,
       location: user.location,
       phone: user.phone,
       about: user.about,
@@ -118,6 +122,7 @@ const register = async (req, res, next) => {
       profilePhoto: user.profilePhoto,
       avatarColor: user.avatarColor,
       initials: user.initials,
+      isVerified: user.isVerified || false,
       createdAt: user.createdAt,
     };
 
@@ -165,6 +170,10 @@ const login = async (req, res, next) => {
       });
     }
 
+    user.isLoggedIn = true;
+    user.lastLogin = new Date();
+    await user.save();
+
     const token = generateToken(user._id);
 
     const userResponse = {
@@ -173,6 +182,8 @@ const login = async (req, res, next) => {
       email: user.email,
       headline: user.headline,
       role: user.role,
+      isLoggedIn: user.isLoggedIn,
+      lastLogin: user.lastLogin,
       location: user.location,
       phone: user.phone,
       about: user.about,
@@ -193,6 +204,7 @@ const login = async (req, res, next) => {
       profilePhoto: user.profilePhoto,
       avatarColor: user.avatarColor,
       initials: user.initials,
+      isVerified: user.isVerified || false,
       createdAt: user.createdAt,
     };
 
@@ -231,12 +243,19 @@ const getMe = async (req, res, next) => {
 
 // @desc    Logout user
 // @route   POST /api/auth/logout
-// @access  Public
-const logout = (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Logged out successfully",
-  });
+// @access  Private / Optional
+const logout = async (req, res, next) => {
+  try {
+    if (req.user && req.user._id) {
+      await User.findByIdAndUpdate(req.user._id, { isLoggedIn: false });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = {

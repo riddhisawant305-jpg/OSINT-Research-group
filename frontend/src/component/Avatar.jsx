@@ -1,6 +1,20 @@
 import React, { useState } from "react";
 import "./Avatar.css";
 
+const resolvePhotoUrl = (url) => {
+  if (!url) return "";
+  if (
+    url.startsWith("data:") ||
+    url.startsWith("blob:") ||
+    url.startsWith("http://") ||
+    url.startsWith("https://")
+  ) {
+    return url;
+  }
+  const clean = url.startsWith("/") ? url : `/${url}`;
+  return `http://localhost:5000${clean}`;
+};
+
 function Avatar({ user = {}, size = 46, initials, color }) {
   const [imgError, setImgError] = useState(false);
   const u = user || {};
@@ -16,10 +30,12 @@ function Avatar({ user = {}, size = 46, initials, color }) {
           .slice(0, 2)
       : "?");
 
-  if (u.profilePhoto && !imgError) {
+  const photoSrc = resolvePhotoUrl(u.profilePhoto);
+
+  if (photoSrc && !imgError) {
     return (
       <img
-        src={u.profilePhoto}
+        src={photoSrc}
         alt={u.name || "Avatar"}
         className="cv-avatar"
         style={{

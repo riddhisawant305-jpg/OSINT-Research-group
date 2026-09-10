@@ -1,6 +1,7 @@
 const Connection = require("../models/Connection");
 const User = require("../models/User");
 const mongoose = require("mongoose");
+const { createNotification } = require("./notificationController");
 
 // @desc    Get all connections for current user (including network members)
 // @route   GET /api/connections
@@ -28,8 +29,8 @@ const getConnections = async (req, res, next) => {
     // Fetch other users to suggest/display in network grid
     const userQuery = userId ? { _id: { $ne: userId } } : {};
     const users = await User.find(userQuery)
-      .select("name headline location avatarColor initials profilePhoto")
-      .limit(30);
+      .select("name headline location avatarColor initials profilePhoto isVerified role companyName skills")
+      .limit(60);
 
     const formatted = users.map((u) => {
       const connInfo = userId ? connectionMap.get(u._id.toString()) : null;
@@ -44,11 +45,15 @@ const getConnections = async (req, res, next) => {
           _id: u._id,
           id: u._id,
           name: u.name,
-          headline: u.headline || "CareerVerse Professional",
+          headline: u.headline || (u.role === "organization" ? "Hiring Organization" : "CareerVerse Professional"),
           location: u.location || "India",
+          role: u.role || "student",
+          companyName: u.companyName || "",
+          skills: u.skills || [],
           initials: u.initials || u.name.slice(0, 2).toUpperCase(),
           avatarColor: u.avatarColor || "#7c3aed",
           profilePhoto: u.profilePhoto || "",
+          isVerified: !!u.isVerified,
         },
         mutual: Math.floor(Math.random() * 30) + 5,
         connected: !!isConnected,
@@ -127,6 +132,16 @@ const sendConnectionRequest = async (req, res, next) => {
       if (connection.recipient.toString() === req.user._id.toString()) {
         connection.status = "accepted";
         await connection.save();
+
+        await createNotification({
+          recipient: targetUserId,
+          sender: req.user._id,
+          type: "connection",
+          title: "Connection Accepted",
+          text: `${req.user.name} accepted your connection request.`,
+          link: `/profile/${req.user._id}`,
+        });
+
         return res.status(200).json({
           success: true,
           connected: true,
@@ -147,6 +162,15 @@ const sendConnectionRequest = async (req, res, next) => {
       requester: req.user._id,
       recipient: targetUserId,
       status: "accepted",
+    });
+
+    await createNotification({
+      recipient: targetUserId,
+      sender: req.user._id,
+      type: "connection",
+      title: "New Connection",
+      text: `${req.user.name} connected with you on CareerVerse.`,
+      link: `/profile/${req.user._id}`,
     });
 
     res.status(201).json({

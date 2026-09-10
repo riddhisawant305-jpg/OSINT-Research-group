@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ThumbsUp, MessageCircle, Share2, Check } from "lucide-react";
+import { ThumbsUp, MessageCircle, Share2, Check, Trash2, FileText, Download } from "lucide-react";
 import API from "../api/client";
 import Avatar from "./Avatar";
+import VerifiedBadge from "./VerifiedBadge";
 import "./PostCard.css";
 
-function PostCard({ post }) {
+function PostCard({ post, onDelete }) {
   const navigate = useNavigate();
   const [liked, setLiked] = useState(post.liked || false);
   const [likes, setLikes] = useState(post.likes || 0);
@@ -13,7 +14,7 @@ function PostCard({ post }) {
   const [copied, setCopied] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [commentsList, setCommentsList] = useState([]);
+  const [commentsList, setCommentsList] = useState(post.commentsList || []);
 
   const toggleLike = async () => {
     const nextLiked = !liked;
@@ -28,24 +29,15 @@ function PostCard({ post }) {
           setLiked(res.data.liked);
         }
       } catch (err) {
-        // Revert on error
-        setLiked(!nextLiked);
-        setLikes((n) => Math.max(0, n + (nextLiked ? -1 : 1)));
+        console.warn("Could not like post:", err.message);
       }
     }
   };
 
   const handleShare = async () => {
-    const postUrl = `${window.location.origin}/home#post-${post._id || post.id || ""}`;
-    try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(postUrl);
-      }
-    } catch (clipErr) {
-      console.warn("Clipboard access denied:", clipErr);
-    }
+    navigator.clipboard?.writeText(window.location.origin + `/posts/${post._id || post.id}`);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2200);
+    setTimeout(() => setCopied(false), 2000);
 
     if (post._id) {
       try {
@@ -67,14 +59,26 @@ function PostCard({ post }) {
     const textToSend = commentText.trim();
     setCommentText("");
 
+    const tempComment = {
+      _id: Date.now().toString(),
+      text: textToSend,
+      createdAt: new Date().toISOString(),
+      user: {
+        name: "You",
+        headline: "Career Enthusiast",
+        avatarColor: "#2563eb",
+      },
+    };
+    setCommentsList((prev) => [...prev, tempComment]);
+
     if (post._id) {
       try {
         const res = await API.post(`/posts/${post._id}/comments`, { text: textToSend });
-        if (res.data && res.data.data) {
-          setCommentsList((prev) => [...prev, res.data.data]);
+        if (res.data && res.data.comments) {
+          setCommentsList(res.data.comments);
         }
       } catch (err) {
-        console.warn("Could not post comment:", err.message);
+        console.warn("Could not add comment:", err.message);
       }
     }
   };
@@ -86,6 +90,12 @@ function PostCard({ post }) {
     }
   };
 
+  const getMediaUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http") || url.startsWith("data:")) return url;
+    return `http://localhost:5000${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
   return (
     <article className="post-card">
       <div className="post-head">
@@ -94,26 +104,98 @@ function PostCard({ post }) {
         </div>
         <div className="post-head-meta">
           <strong
-            style={{ cursor: "pointer" }}
+            style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
             onClick={handleAuthorClick}
             title="View profile"
           >
-            {post.user.name}
+            {post.user?.name || "CareerVerse Member"}
+            {post.user?.isVerified && <VerifiedBadge size={15} />}
           </strong>
-          <span>{post.user.headline}</span>
+          <span>{post.user?.headline || ""}</span>
           <small>{post.time ? `${post.time} ago` : "recently"}</small>
         </div>
+
+        {onDelete && (
+          <button
+            type="button"
+            className="post-delete-btn"
+            onClick={onDelete}
+            title="Delete this post"
+            style={{
+              marginLeft: "auto",
+              background: "transparent",
+              border: "none",
+              color: "#ef4444",
+              cursor: "pointer",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              fontSize: "12px",
+              fontWeight: "600",
+            }}
+          >
+            <Trash2 size={15} />
+            <span>Delete</span>
+          </button>
+        )}
       </div>
 
-      <p className="post-body">{post.content}</p>
+      {post.content && <p className="post-body">{post.content}</p>}
+
+      {post.media && (
+        <div className="post-media-container" style={{ margin: "12px 0" }}>
+          {post.mediaType === "video" ? (
+            <video
+              src={getMediaUrl(post.media)}
+              controls
+              style={{ width: "100%", maxHeight: "450px", borderRadius: "8px", background: "#000" }}
+            />
+          ) : post.mediaType === "document" ? (
+            <a
+              href={getMediaUrl(post.media)}
+              target="_blank"
+              rel="noreferrer"
+              download={post.mediaName || "Document"}
+              className="post-doc-card"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "14px 18px",
+                background: "#f8fafc",
+                border: "1px solid #cbd5e1",
+                borderRadius: "10px",
+                textDecoration: "none",
+                color: "#1e293b",
+                fontWeight: 500,
+                transition: "background 0.2s ease",
+              }}
+            >
+              <FileText size={28} color="#dc2626" />
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <strong style={{ display: "block", fontSize: "14px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                  {post.mediaName || "Attached Document"}
+                </strong>
+                <small style={{ color: "#64748b" }}>Click to view / download document</small>
+              </div>
+              <Download size={18} color="#2563eb" />
+            </a>
+          ) : (
+            <img
+              src={getMediaUrl(post.media)}
+              alt="Post attachment"
+              style={{ width: "100%", maxHeight: "500px", objectFit: "cover", borderRadius: "8px" }}
+            />
+          )}
+        </div>
+      )}
 
       <div className="post-stats">
-        <span>
-          <ThumbsUp size={14} /> {likes}
-        </span>
-        <span>
-          {(post.comments || 0) + commentsList.length} comments · {sharesCount} shares
-        </span>
+        <span>{likes} likes</span>
+        <span>{commentsList.length || post.comments || 0} comments</span>
+        <span>{sharesCount} shares</span>
       </div>
 
       <div className="post-actions">
@@ -137,22 +219,23 @@ function PostCard({ post }) {
 
       {showComments && (
         <div className="post-comments">
-          <div className="comment">
-            <Avatar user={post.user} size={32} />
-            <div className="comment-bubble">
-              <strong>{post.user.name}</strong>
-              <p>Great post! Thanks for sharing 🙌</p>
-            </div>
-          </div>
           {commentsList.map((c, idx) => (
-            <div className="comment" key={idx}>
+            <div className="comment" key={c._id || idx}>
               <Avatar user={c.user || post.user} size={32} />
               <div className="comment-bubble">
-                <strong>{c.user?.name || "Member"}</strong>
+                <strong style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  {c.user?.name || "Member"}
+                  {c.user?.isVerified && <VerifiedBadge size={13} />}
+                </strong>
                 <p>{c.text}</p>
               </div>
             </div>
           ))}
+          {commentsList.length === 0 && (
+            <p style={{ fontSize: "13px", color: "var(--cv-muted)", fontStyle: "italic", margin: "6px 0 12px 0" }}>
+              No comments yet. Be the first to comment!
+            </p>
+          )}
           <form className="comment-input" onSubmit={handleAddComment}>
             <input
               placeholder="Add a comment..."

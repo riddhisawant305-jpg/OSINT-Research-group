@@ -31,6 +31,8 @@ import {
   X,
   Clock,
   Award,
+  Trash2,
+  Edit3,
 } from "lucide-react";
 import {
   careerStats as fallbackStats,
@@ -43,16 +45,16 @@ import "./Dashboard.css";
 
 const activity = [
   { month: "Jan", views: 120, searches: 90 },
-  { month: "Feb", views: 150, searches: 110 },
-  { month: "Mar", views: 180, searches: 130 },
-  { month: "Apr", views: 210, searches: 160 },
-  { month: "May", views: 240, searches: 180 },
+  { month: "Feb", views: 160, searches: 110 },
+  { month: "Mar", views: 140, searches: 95 },
+  { month: "Apr", views: 200, searches: 140 },
+  { month: "May", views: 220, searches: 170 },
   { month: "Jun", views: 245, searches: 190 },
 ];
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const isOrgOrRecruiter =
     user?.role === "organization" || user?.role === "recruiter";
@@ -75,6 +77,90 @@ function Dashboard() {
   const [postJobModalOpen, setPostJobModalOpen] = useState(false);
   const [postJobSubmitting, setPostJobSubmitting] = useState(false);
   const [postJobError, setPostJobError] = useState("");
+
+  const [editOrgModalOpen, setEditOrgModalOpen] = useState(false);
+  const [orgSaving, setOrgSaving] = useState(false);
+  const [orgForm, setOrgForm] = useState({
+    companyName: user?.companyName || user?.name || "",
+    companyIndustry: user?.companyIndustry || user?.organizationDetails?.industry || "",
+    companyWebsite: user?.companyWebsite || user?.organizationDetails?.website || "",
+    companySize: user?.companySize || "11-50 employees",
+    location: user?.location || "",
+    about: user?.about || user?.organizationDetails?.about || "",
+    hrName: user?.hrDetails?.name || user?.name || "",
+    hrEmail: user?.hrDetails?.email || user?.email || "",
+    hrPhone: user?.hrDetails?.phone || user?.phone || "",
+  });
+
+  useEffect(() => {
+    if (user) {
+      setOrgForm({
+        companyName: user.companyName || user.name || "",
+        companyIndustry: user.companyIndustry || user.organizationDetails?.industry || "",
+        companyWebsite: user.companyWebsite || user.organizationDetails?.website || "",
+        companySize: user.companySize || "11-50 employees",
+        location: user.location || "",
+        about: user.about || user.organizationDetails?.about || "",
+        hrName: user.hrDetails?.name || user.name || "",
+        hrEmail: user.hrDetails?.email || user.email || "",
+        hrPhone: user.hrDetails?.phone || user.phone || "",
+      });
+    }
+  }, [user]);
+
+  const handleSaveOrgDetails = async (e) => {
+    e.preventDefault();
+    setOrgSaving(true);
+    try {
+      const payload = {
+        name: orgForm.companyName.trim() || user?.name,
+        companyName: orgForm.companyName.trim(),
+        companyIndustry: orgForm.companyIndustry.trim(),
+        companyWebsite: orgForm.companyWebsite.trim(),
+        companySize: orgForm.companySize.trim(),
+        location: orgForm.location.trim(),
+        about: orgForm.about.trim(),
+        hrDetails: {
+          name: orgForm.hrName.trim(),
+          email: orgForm.hrEmail.trim(),
+          phone: orgForm.hrPhone.trim(),
+        },
+        organizationDetails: {
+          ...user?.organizationDetails,
+          industry: orgForm.companyIndustry.trim(),
+          website: orgForm.companyWebsite.trim(),
+          about: orgForm.about.trim(),
+        },
+      };
+      const res = await API.put("/users/me", payload);
+      if (res.data && res.data.data) {
+        updateUser(res.data.data);
+      } else {
+        updateUser({ ...user, ...payload });
+      }
+      setEditOrgModalOpen(false);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to update organization details");
+    } finally {
+      setOrgSaving(false);
+    }
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    if (!window.confirm("Are you sure you want to delete this job listing? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      await API.delete(`/jobs/${jobId}`);
+      setPostedJobs((prev) => prev.filter((j) => (j._id || j.id) !== jobId));
+      setRecruiterStats((prev) => ({
+        ...prev,
+        jobsPostedCount: Math.max(0, (prev.jobsPostedCount || 1) - 1),
+      }));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete job.");
+    }
+  };
 
   const [applicantsModalJob, setApplicantsModalJob] = useState(null);
   const [jobApplications, setJobApplications] = useState([]);
@@ -100,6 +186,8 @@ function Dashboard() {
     orgAbout: user?.organizationDetails?.about || user?.about || "",
   });
 
+  const [hiredEmployees, setHiredEmployees] = useState([]);
+
   const loadDashboard = async () => {
     setLoading(true);
     try {
@@ -112,6 +200,7 @@ function Dashboard() {
 
         if (d.recruiterStats) setRecruiterStats(d.recruiterStats);
         if (d.postedJobs) setPostedJobs(d.postedJobs);
+        if (d.hiredEmployees) setHiredEmployees(d.hiredEmployees);
       }
     } catch (err) {
       console.warn("Could not load backend dashboard data:", err.message);
@@ -273,7 +362,7 @@ function Dashboard() {
       },
       {
         label: "Offers / Accepted",
-        value: recruiterStats?.acceptedCount || 0,
+        value: recruiterStats?.acceptedCount || hiredEmployees.length || 0,
         Icon: Award,
         trend: "Hired",
       },
@@ -338,10 +427,10 @@ function Dashboard() {
             </h3>
             <button
               className="btn-outline"
-              style={{ fontSize: 13, padding: "5px 12px" }}
-              onClick={() => navigate("/edit-profile")}
+              style={{ fontSize: 13, padding: "5px 12px", display: "flex", alignItems: "center", gap: 6 }}
+              onClick={() => setEditOrgModalOpen(true)}
             >
-              Edit Details
+              <Edit3 size={13} /> Edit Company Details
             </button>
           </div>
           <div className="org-info-summary-grid">
@@ -476,6 +565,15 @@ function Dashboard() {
                           >
                             <ExternalLink size={14} />
                           </a>
+                          <button
+                            type="button"
+                            className="btn-outline table-btn icon-only"
+                            style={{ borderColor: "#ef4444", color: "#ef4444" }}
+                            title="Delete Job Opening"
+                            onClick={() => handleDeleteJob(job._id || job.id)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -485,6 +583,234 @@ function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* -------------------------------------------------- */}
+        {/* HIRED FROM CAREERVERSE SUMMARY BANNER               */}
+        {/* -------------------------------------------------- */}
+        <div
+          className="card"
+          style={{
+            marginTop: 20,
+            padding: "18px 22px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 16,
+            background: "linear-gradient(135deg, rgba(37,99,235,0.04), rgba(124,58,237,0.05))",
+            border: "1px solid rgba(37,99,235,0.2)",
+            borderRadius: 14,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 260 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Award size={22} />
+            </div>
+            <div>
+              <h4 style={{ margin: 0, fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                Hired from CareerVerse
+                <span className="hired-counter-pill">{hiredEmployees.length} Hired</span>
+              </h4>
+              <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "var(--cv-muted)" }}>
+                View employee records, manage compensation & IDs, and download candidate resumes on the dedicated Hired screen.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn-primary"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13.5,
+              padding: "9px 16px",
+            }}
+            onClick={() => navigate("/hired")}
+          >
+            Open Hired Screen <ArrowRight size={15} />
+          </button>
+        </div>
+
+        {/* -------------------------------------------------- */}
+        {/* EDIT ORGANIZATION DETAILS MODAL                    */}
+        {/* -------------------------------------------------- */}
+        {editOrgModalOpen && (
+          <div className="cv-modal-overlay" onClick={() => setEditOrgModalOpen(false)}>
+            <div className="cv-modal-dialog" onClick={(e) => e.stopPropagation()}>
+              <div className="cv-modal-header">
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 19 }}>Edit Organization & Company Details</h2>
+                  <p style={{ margin: "4px 0 0 0", color: "var(--cv-muted)", fontSize: 13 }}>
+                    Update company size, industry, recruiter contact details, and organization overview.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="cv-modal-close"
+                  onClick={() => setEditOrgModalOpen(false)}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveOrgDetails} className="post-job-form">
+                <div className="form-group-row">
+                  <div className="form-group" style={{ flex: 2 }}>
+                    <label>Company / Organization Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Acme Corporation"
+                      value={orgForm.companyName}
+                      onChange={(e) =>
+                        setOrgForm({ ...orgForm, companyName: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ flex: 1.5 }}>
+                    <label>Company Size (Employee Numbers) *</label>
+                    <select
+                      value={orgForm.companySize}
+                      onChange={(e) =>
+                        setOrgForm({ ...orgForm, companySize: e.target.value })
+                      }
+                    >
+                      <option value="1-10 employees">1-10 employees</option>
+                      <option value="11-50 employees">11-50 employees</option>
+                      <option value="51-200 employees">51-200 employees</option>
+                      <option value="201-500 employees">201-500 employees</option>
+                      <option value="501-1000 employees">501-1000 employees</option>
+                      <option value="1000+ employees">1000+ employees</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group-row">
+                  <div className="form-group">
+                    <label>Industry</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Technology, Finance, Health"
+                      value={orgForm.companyIndustry}
+                      onChange={(e) =>
+                        setOrgForm({ ...orgForm, companyIndustry: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Company Website</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. https://company.com"
+                      value={orgForm.companyWebsite}
+                      onChange={(e) =>
+                        setOrgForm({ ...orgForm, companyWebsite: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Headquarters / Location</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Mumbai, India"
+                      value={orgForm.location}
+                      onChange={(e) =>
+                        setOrgForm({ ...orgForm, location: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>About the Organization</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe your organization's mission, values, and work culture..."
+                    value={orgForm.about}
+                    onChange={(e) =>
+                      setOrgForm({ ...orgForm, about: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div style={{ borderTop: "1px solid var(--cv-border)", paddingTop: 14, marginTop: 14 }}>
+                  <h4 style={{ margin: "0 0 10px 0", fontSize: 15, color: "var(--cv-blue)", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Mail size={16} /> HR & Talent Acquisition Contact Details
+                  </h4>
+                  <div className="form-group-row">
+                    <div className="form-group">
+                      <label>HR Contact Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Jane Doe"
+                        value={orgForm.hrName}
+                        onChange={(e) =>
+                          setOrgForm({ ...orgForm, hrName: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>HR Contact Email</label>
+                      <input
+                        type="email"
+                        placeholder="e.g. hiring@company.com"
+                        value={orgForm.hrEmail}
+                        onChange={(e) =>
+                          setOrgForm({ ...orgForm, hrEmail: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>HR Contact Phone</label>
+                      <input
+                        type="tel"
+                        placeholder="e.g. +91 98765 43210"
+                        value={orgForm.hrPhone}
+                        onChange={(e) =>
+                          setOrgForm({ ...orgForm, hrPhone: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="post-job-form-actions">
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    onClick={() => setEditOrgModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={orgSaving}
+                  >
+                    {orgSaving ? "Saving..." : "Save Details"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* -------------------------------------------------- */}
         {/* POST JOB MODAL                                     */}

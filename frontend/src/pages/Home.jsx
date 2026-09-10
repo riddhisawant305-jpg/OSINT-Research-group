@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Image, Video, Calendar, FileText, Bot, FileBadge, Mic, Map } from "lucide-react";
+import { Image, Video, FileText, Bot, FileBadge, Mic, Briefcase, Users, Award } from "lucide-react";
 import { currentUser as fallbackUser, posts as fallbackPosts } from "../data/dummyData";
 import { useAuth } from "../context/AuthContext";
 import API from "../api/client";
@@ -12,6 +12,7 @@ function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const activeUser = user || fallbackUser;
+  const isOrg = activeUser.role === "organization" || activeUser.role === "recruiter";
 
   const [feedPosts, setFeedPosts] = useState(fallbackPosts);
   const [stats, setStats] = useState({
@@ -36,14 +37,22 @@ function Home() {
     const fetchStats = async () => {
       try {
         const res = await API.get("/users/me/dashboard");
-        if (res.data && res.data.data && res.data.data.careerStats) {
-          setStats({
-            connections: res.data.data.careerStats.connectionsCount,
-            posts: res.data.data.careerStats.postsCount,
-          });
+        if (res.data && res.data.data) {
+          const { careerStats, recruiterStats, user: dashUser } = res.data.data;
+          if (careerStats) {
+            setStats({
+              connections: careerStats.connectionsCount || activeUser.connections || 0,
+              posts: careerStats.postsCount || activeUser.posts || 0,
+            });
+          } else if (recruiterStats) {
+            setStats({
+              connections: activeUser.connections || 0,
+              posts: recruiterStats.jobsPostedCount || 0,
+            });
+          }
         }
       } catch (err) {
-        // Fallback to activeUser properties if unauthenticated
+        console.warn("Could not fetch user stats:", err.message);
       }
     };
 
@@ -54,8 +63,13 @@ function Home() {
   const tools = [
     { to: "/mentor", Icon: Bot, label: "AI Career Mentor", color: "#7c3aed" },
     { to: "/resume", Icon: FileBadge, label: "Resume Analyzer", color: "#2563eb" },
-    { to: "/interview", Icon: Mic, label: "Mock Interview", color: "#0891b2" },
-    { to: "/roadmap", Icon: Map, label: "Learning Roadmap", color: "#d97706" },
+    { to: "/practice-interview", Icon: Mic, label: "Practice Interview", color: "#0891b2" },
+  ];
+
+  const orgTools = [
+    { to: "/dashboard", Icon: Briefcase, label: "Manage Jobs & Openings", color: "#2563eb" },
+    { to: "/dashboard", Icon: Users, label: "Review Applications", color: "#0891b2" },
+    { to: "/dashboard", Icon: Award, label: "Hired from CareerVerse", color: "#059669" },
   ];
 
   const firstName = activeUser.name ? activeUser.name.split(" ")[0] : "Friend";
@@ -78,9 +92,6 @@ function Home() {
           <div className="network-row" onClick={() => navigate("/network")}>
             <span>Connections</span><span>{stats.connections}</span>
           </div>
-          <div className="network-row" onClick={() => navigate("/network")}>
-            <span>Follows</span><span>85</span>
-          </div>
         </div>
       </aside>
 
@@ -95,8 +106,7 @@ function Home() {
           <div className="composer-actions">
             <button onClick={() => navigate("/create-post")}><Image size={18} /> Photo</button>
             <button onClick={() => navigate("/create-post")}><Video size={18} /> Video</button>
-            <button onClick={() => navigate("/create-post")}><Calendar size={18} /> Event</button>
-            <button onClick={() => navigate("/create-post")}><FileText size={18} /> Article</button>
+            <button onClick={() => navigate("/create-post")}><FileText size={18} /> Add Document</button>
           </div>
         </div>
 
@@ -106,19 +116,32 @@ function Home() {
       </section>
 
       <aside className="home-side right">
-        <div className="card tools-card">
-          <h4>Career Tools</h4>
-          {tools.map(({ to, Icon, label, color }) => (
-            <button key={to} className="tool-row" onClick={() => navigate(to)}>
-              <span className="tool-icon" style={{ background: color }}><Icon size={18} /></span>
-              <span>{label}</span>
-              <span className="tool-arrow">›</span>
-            </button>
-          ))}
-        </div>
+        {!isOrg ? (
+          <div className="card tools-card">
+            <h4>Career Tools</h4>
+            {tools.map(({ to, Icon, label, color }) => (
+              <button key={to} className="tool-row" onClick={() => navigate(to)}>
+                <span className="tool-icon" style={{ background: color }}><Icon size={18} /></span>
+                <span>{label}</span>
+                <span className="tool-arrow">›</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="card tools-card">
+            <h4>Recruitment Hub</h4>
+            {orgTools.map(({ to, Icon, label, color }, idx) => (
+              <button key={idx} className="tool-row" onClick={() => navigate(to)}>
+                <span className="tool-icon" style={{ background: color }}><Icon size={18} /></span>
+                <span>{label}</span>
+                <span className="tool-arrow">›</span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="card dashboard-mini" onClick={() => navigate("/dashboard")}>
-          <strong>Career Dashboard</strong>
-          <span>Track your progress and insights ›</span>
+          <strong>{isOrg ? "Organization Dashboard" : "Career Dashboard"}</strong>
+          <span>{isOrg ? "Track applications & hiring insights ›" : "Track your progress and insights ›"}</span>
         </div>
       </aside>
     </div>

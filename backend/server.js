@@ -9,7 +9,14 @@ const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 // Connect to MongoDB Atlas
-connectDB();
+connectDB().then(async () => {
+  try {
+    const seedData = require("./seed");
+    await seedData();
+  } catch (err) {
+    console.warn("Auto-seed notice:", err.message);
+  }
+});
 
 const app = express();
 
@@ -57,6 +64,9 @@ app.get("/", (req, res) => {
   });
 });
 
+// Static uploads directory for resumes and media
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Mount Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
@@ -65,6 +75,8 @@ app.use("/api/jobs", require("./routes/jobRoutes"));
 app.use("/api/applications", require("./routes/applicationRoutes"));
 app.use("/api/connections", require("./routes/connectionRoutes"));
 app.use("/api/career", require("./routes/careerRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes"));
 
 // Error handling middleware
 app.use(notFound);
@@ -72,8 +84,10 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
