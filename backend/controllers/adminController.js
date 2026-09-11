@@ -2,7 +2,9 @@ const User = require("../models/User");
 const Post = require("../models/Post");
 const Job = require("../models/Job");
 const Application = require("../models/Application");
-const Notification = require("../models/Notification");\nconst Inquiry = require("../models/Inquiry");\nconst Faq = require("../models/Faq");
+const Notification = require("../models/Notification");
+const Inquiry = require("../models/Inquiry");
+const Faq = require("../models/Faq");
 const { generateToken } = require("../utils/jwt");
 const {
   sendUserDeletedByAdminEmail,
@@ -10,7 +12,8 @@ const {
   sendOrgDeletedByAdminEmail,
   sendJobDeletedByAdminEmail,
   sendCustomAdminEmail,
-  sendVerificationBadgeEmail,\n  sendBroadcastEmail,
+  sendVerificationBadgeEmail,
+  sendBroadcastEmail,
 } = require("../services/emailService");
 
 // Auto-seed or guarantee default admin exists
