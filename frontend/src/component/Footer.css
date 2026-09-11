@@ -1,0 +1,247 @@
+/* CareerVerse Modern Footer Styles */
+.cv-footer {
+  background: #0f172a;
+  color: #cbd5e1;
+  border-top: 1px solid #1e293b;
+  margin-top: auto;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cv-footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 20px 24px;
+}
+
+.cv-footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 36px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 960px) {
+  .cv-footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+}
+
+@media (max-width: 580px) {
+  .cv-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+/* Brand Column */
+.cv-footer-brand-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cv-footer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  margin-bottom: 4px;
+}
+
+.cv-footer-logo-badge {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+.cv-footer-logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+.cv-footer-logo-text span {
+  color: #38bdf8;
+}
+
+.cv-footer-tagline {
+  color: #94a3b8;
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 320px;
+}
+
+.cv-footer-support-badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.cv-footer-support-icon {
+  color: #38bdf8;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.cv-footer-support-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 2px;
+}
+
+.cv-footer-support-email {
+  color: #f1f5f9;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.cv-footer-support-email:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.cv-footer-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  padding: 5px 10px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.cv-status-dot {
+  width: 7px;
+  height: 7px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #10b981;
+}
+
+/* Links Columns */
+.cv-footer-heading {
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 0 0 16px 0;
+}
+
+.cv-footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.cv-footer-links li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13.5px;
+  transition: all 0.2s ease;
+}
+
+.cv-footer-links li a:hover {
+  color: #38bdf8;
+  transform: translateX(3px);
+}
+
+.cv-footer-static-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.cv-admin-link-highlight {
+  color: #cbd5e1 !important;
+  font-weight: 600;
+}
+
+.cv-admin-link-highlight:hover {
+  color: #f59e0b !important;
+}
+
+/* Bottom Strip */
+.cv-footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 1px solid #1e293b;
+  padding-top: 24px;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.cv-footer-bottom-left p {
+  margin: 0;
+}
+
+.cv-footer-bottom-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cv-footer-bottom-right a {
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.cv-footer-bottom-right a:hover {
+  color: #38bdf8;
+}
+
+.cv-footer-divider-dot {
+  color: #334155;
+}
+
+.cv-footer-security-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .cv-footer-container {
+    padding-bottom: 80px;
+  }
+}

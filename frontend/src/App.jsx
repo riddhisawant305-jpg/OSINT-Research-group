@@ -26,6 +26,10 @@ import PracticeInterview from "./pages/PracticeInterview";
 import Dashboard from "./pages/Dashboard";
 import HiredEmployees from "./pages/HiredEmployees";
 import AdminDashboard from "./pages/AdminDashboard";
+import AboutUs from "./pages/AboutUs";
+import ContactSupport from "./pages/ContactSupport";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import { AuthProvider } from "./context/AuthContext";
 import ErrorBoundary from "./component/ErrorBoundary";
 
@@ -61,6 +65,12 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/hired" element={<HiredEmployees />} />
             <Route path="/hired-employees" element={<HiredEmployees />} />
+
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactSupport />} />
+            <Route path="/support" element={<ContactSupport />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
           </Route>
 
           <Route path="*" element={<Welcome />} />

@@ -765,6 +765,64 @@ const sendConnectionListedJobEmail = sendConnectionNewJobEmail;
 const sendResetPasswordEmail = sendPasswordResetEmail;
 const sendVerifiedBadgeEmail = sendVerificationBadgeEmail;
 
+
+// 15. Contact / Online Support Inquiry Email
+const sendContactSupportEmail = async ({ name, email, subject, category, message }) => {
+  const supportEmail = 'careerverse999@gmail.com';
+  const mailSubject = `[Support: ${(category || 'GENERAL').toUpperCase()}] ${subject || 'User Inquiry'}`;
+
+  await sendMailSafe({
+    from: `"CareerVerse Support" <${supportEmail}>`,
+    to: supportEmail,
+    replyTo: email,
+    subject: mailSubject,
+    html: renderEmailTemplate({
+      title: mailSubject,
+      headline: `New Support Inquiry from ${name} (${category})`,
+      bodyContent: `
+        <h2 class="greeting">Inquiry Received</h2>
+        <div class="details-box">
+          <div class="details-row"><span class="details-label">Sender Name:</span><span class="details-value">${name}</span></div>
+          <div class="details-row"><span class="details-label">Sender Email:</span><span class="details-value">${email}</span></div>
+          <div class="details-row"><span class="details-label">Category:</span><span class="details-value">${category}</span></div>
+          <div class="details-row"><span class="details-label">Subject:</span><span class="details-value">${subject || 'None'}</span></div>
+        </div>
+        <p><strong>Message:</strong></p>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; white-space:pre-wrap;">${message}</div>
+      `,
+      actionUrl: '/admin',
+      actionText: 'Open Super Admin Panel',
+    }),
+  });
+
+  if (email) {
+    await sendMailSafe({
+      from: `"CareerVerse Support" <${supportEmail}>`,
+      to: email,
+      subject: `We received your inquiry: ${subject || 'Support Request'} [CareerVerse]`,
+      html: renderEmailTemplate({
+        title: 'Support Inquiry Received',
+        headline: 'Thank You for Contacting CareerVerse Support',
+        bodyContent: `
+          <h2 class="greeting">Hi ${name},</h2>
+          <p>Thank you for reaching out to the CareerVerse 100% online support team! We have received your inquiry regarding <strong>${subject || category}</strong>.</p>
+          <div class="details-box">
+            <div class="details-row"><span class="details-label">Inquiry Category:</span><span class="details-value">${category}</span></div>
+            <div class="details-row"><span class="details-label">Reference Subject:</span><span class="details-value">${subject || 'General'}</span></div>
+            <div class="details-row"><span class="details-label">Direct Support Channel:</span><span class="details-value">${supportEmail}</span></div>
+          </div>
+          <p>Our dedicated support team reviews every request carefully and will get back to you with personalized assistance directly to this email address.</p>
+          <p>Best regards,<br><strong>CareerVerse Support Team</strong></p>
+        `,
+        actionUrl: '/home',
+        actionText: 'Return to CareerVerse',
+      }),
+    });
+  }
+
+  return { success: true };
+};
+
 module.exports = {
   transporter,
   sendWelcomeEmail,
@@ -794,5 +852,6 @@ module.exports = {
   sendPasswordResetSuccessEmail,
   sendVerificationBadgeEmail,
   sendVerifiedBadgeEmail,
+  sendContactSupportEmail,
 };
 

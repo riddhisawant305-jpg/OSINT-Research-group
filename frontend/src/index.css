@@ -130,20 +130,23 @@ img {
 /* App layout */
 .cv-app-layout {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: var(--cv-bg);
 }
 
 .cv-app-main {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  padding-bottom: 90px;
+  flex: 1;
 }
 
 @media (max-width: 768px) {
   .cv-app-main {
     padding: 14px;
-    padding-bottom: 90px;
+    padding-bottom: 24px;
   }
 }
 

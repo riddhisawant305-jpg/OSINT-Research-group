@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "./Welcome.css";
 
 function Welcome() {
@@ -63,6 +63,15 @@ function Welcome() {
         </div>
 
         <div className="welcome-footer">
+          <div style={{ display: "flex", gap: "14px", justifyContent: "center", marginBottom: "8px", flexWrap: "wrap", fontSize: "13px" }}>
+            <Link to="/about" style={{ color: "#94a3b8", textDecoration: "none" }}>About Us</Link>
+            <span>·</span>
+            <Link to="/contact" style={{ color: "#94a3b8", textDecoration: "none" }}>Contact & Support</Link>
+            <span>·</span>
+            <Link to="/privacy" style={{ color: "#94a3b8", textDecoration: "none" }}>Privacy Policy</Link>
+            <span>·</span>
+            <Link to="/terms" style={{ color: "#94a3b8", textDecoration: "none" }}>Terms of Service</Link>
+          </div>
           © 2026 CareerVerse · Connect. Grow. Succeed.
         </div>
 

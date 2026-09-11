@@ -77,6 +77,7 @@ app.use("/api/connections", require("./routes/connectionRoutes"));
 app.use("/api/career", require("./routes/careerRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/contact", require("./routes/contactRoutes"));
 
 // Error handling middleware
 app.use(notFound);

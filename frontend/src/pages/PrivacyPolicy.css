@@ -1,0 +1,79 @@
+/* Privacy Policy & Terms Shared Style */
+.policy-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 30px 20px 80px;
+}
+
+.policy-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.policy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.policy-header h1 {
+  font-size: 34px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.policy-sub {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
+}
+
+.policy-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.policy-section h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 12px 0;
+}
+
+.policy-section p {
+  font-size: 15px;
+  color: #334155;
+  line-height: 1.7;
+  margin: 0 0 12px 0;
+}
+
+.policy-section ul {
+  padding-left: 24px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14.5px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.policy-section a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+}

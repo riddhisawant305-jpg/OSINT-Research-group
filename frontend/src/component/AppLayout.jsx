@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import { Navbar } from "./Navbar";
 import BottomNav from "./BottomNav";
+import Footer from "./Footer";
 
 function AppLayout() {
   return (
@@ -10,6 +11,7 @@ function AppLayout() {
       <main className="cv-app-main">
         <Outlet />
       </main>
+      <Footer />
       <BottomNav />
     </div>
   );
