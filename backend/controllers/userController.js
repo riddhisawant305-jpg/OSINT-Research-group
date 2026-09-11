@@ -577,7 +577,7 @@ const getDashboard = async (req, res, next) => {
       profileStrength: strength,
       applicationViews: Math.max(applicationsCount * 12, 14),
       profileViews: Math.max(connectionsCount * 8 + postsCount * 15, 25),
-      searchAppearances: Math.max((user.skills.length || 1) * 14 + postsCount * 6, 18),
+      searchAppearances: Math.max(((user.skills && user.skills.length) || 1) * 14 + postsCount * 6, 18),
       interviewInvites: applicationsCount > 0 ? Math.floor(applicationsCount / 3) : 0,
       connectionRequests: await Connection.countDocuments({
         recipient: userId,
@@ -590,36 +590,46 @@ const getDashboard = async (req, res, next) => {
     };
 
     // Skill progress calculations based on user's real skills
-    const skillProgress = (user.skills && user.skills.length > 0 ? user.skills : ["React", "JavaScript"]).map(
-      (skill, idx) => ({
-        skill,
-        level: Math.min(95, 60 + ((idx * 11) % 35)),
-      })
-    );
+    const rawSkills =
+      user.skills && user.skills.length > 0
+        ? user.skills
+        : ["React", "JavaScript", "Problem Solving", "Communication"];
+    const skillProgress = rawSkills.map((skill, idx) => ({
+      name: skill,
+      skill,
+      level: Math.min(95, 60 + ((idx * 11) % 35)),
+    }));
 
     // Organization specific stats and jobs
     let recruiterStats = null;
     let postedJobs = [];
+    let hiredEmployees = [];
     if (user.role === "recruiter" || user.role === "organization") {
       const Job = require("../models/Job");
-      postedJobs = await Job.find({ recruiter: userId }).sort("-createdAt");
+      const jobQuery = {
+        $or: [{ recruiter: userId }, { "hrDetails.email": user.email }],
+      };
+      postedJobs = await Job.find(jobQuery).sort("-createdAt");
       const jobIds = postedJobs.map((j) => j._id);
       const totalApplications = await Application.countDocuments({ job: { $in: jobIds } });
-      const shortlisted = await Application.countDocuments({ job: { $in: jobIds }, status: "Shortlisted" });
-      const accepted = await Application.countDocuments({ job: { $in: jobIds }, status: "Accepted" });
+      const shortlisted = await Application.countDocuments({
+        job: { $in: jobIds },
+        status: { $regex: /^shortlisted$/i },
+      });
+      const accepted = await Application.countDocuments({
+        job: { $in: jobIds },
+        status: { $regex: /^(accepted|hired)$/i },
+      });
+
+      const HiredEmployee = require("../models/HiredEmployee");
+      hiredEmployees = await HiredEmployee.find({ organization: userId }).sort("-createdAt");
 
       recruiterStats = {
         jobsPostedCount: postedJobs.length,
         totalApplicationsCount: totalApplications,
         shortlistedCount: shortlisted,
-        acceptedCount: accepted,
+        acceptedCount: Math.max(accepted, hiredEmployees.length),
       };
-    }
-
-    let hiredEmployees = [];
-    if (user.role === "recruiter" || user.role === "organization") {
-      const HiredEmployee = require("../models/HiredEmployee");
-      hiredEmployees = await HiredEmployee.find({ organization: userId }).sort("-createdAt");
     }
 
     res.status(200).json({

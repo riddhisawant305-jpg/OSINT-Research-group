@@ -60,14 +60,21 @@
   border-radius: 12px;
 }
 
-.stat-card > strong {
+.stat-card > strong,
+.stat-card strong,
+.stat-card .stat-value,
+.stat-value {
   font-size: 28px;
+  font-weight: 800;
   display: block;
+  color: var(--cv-text, #111827) !important;
+  line-height: 1.2;
+  margin-bottom: 4px;
 }
 
 .stat-label {
   display: block;
-  color: var(--cv-muted);
+  color: var(--cv-muted, #6b7280) !important;
   font-size: 13px;
   margin-top: 2px;
 }

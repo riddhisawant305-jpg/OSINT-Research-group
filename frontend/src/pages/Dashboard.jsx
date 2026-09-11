@@ -195,8 +195,15 @@ function Dashboard() {
       if (res.data && res.data.data) {
         const d = res.data.data;
         if (d.careerStats) setStatsData(d.careerStats);
-        if (d.skillProgress && d.skillProgress.length > 0)
-          setSkillsData(d.skillProgress);
+        if (d.skillProgress && d.skillProgress.length > 0) {
+          setSkillsData(
+            d.skillProgress.map((item) => ({
+              name: item.name || item.skill || "Skill",
+              skill: item.skill || item.name || "Skill",
+              level: typeof item.level === "number" ? item.level : 65,
+            }))
+          );
+        }
 
         if (d.recruiterStats) setRecruiterStats(d.recruiterStats);
         if (d.postedJobs) setPostedJobs(d.postedJobs);
@@ -344,25 +351,39 @@ function Dashboard() {
     const orgStats = [
       {
         label: "Jobs Listed",
-        value: recruiterStats?.jobsPostedCount || postedJobs.length || 0,
+        value: Number(
+          Math.max(
+            typeof recruiterStats?.jobsPostedCount === "number"
+              ? recruiterStats.jobsPostedCount
+              : 0,
+            Array.isArray(postedJobs) ? postedJobs.length : 0
+          )
+        ),
         Icon: Briefcase,
         trend: "Active",
       },
       {
         label: "Applications Received",
-        value: recruiterStats?.totalApplicationsCount || 0,
+        value: Number(recruiterStats?.totalApplicationsCount ?? 0),
         Icon: Users,
         trend: "Total",
       },
       {
         label: "Shortlisted",
-        value: recruiterStats?.shortlistedCount || 0,
+        value: Number(recruiterStats?.shortlistedCount ?? 0),
         Icon: CheckCircle,
         trend: "Candidates",
       },
       {
         label: "Offers / Accepted",
-        value: recruiterStats?.acceptedCount || hiredEmployees.length || 0,
+        value: Number(
+          Math.max(
+            typeof recruiterStats?.acceptedCount === "number"
+              ? recruiterStats.acceptedCount
+              : 0,
+            Array.isArray(hiredEmployees) ? hiredEmployees.length : 0
+          )
+        ),
         Icon: Award,
         trend: "Hired",
       },
@@ -413,7 +434,7 @@ function Dashboard() {
                 </span>
                 <span className="stat-trend">{trend}</span>
               </div>
-              <strong>{value}</strong>
+              <strong className="stat-value">{typeof value === "number" ? value : 0}</strong>
               <span className="stat-label">{label}</span>
             </div>
           ))}
@@ -1212,32 +1233,32 @@ function Dashboard() {
   const stats = [
     {
       label: "Profile Views",
-      value: statsData.profileViews,
+      value: Number(statsData?.profileViews ?? fallbackStats.profileViews ?? 0),
       Icon: Eye,
       trend: "+12%",
     },
     {
       label: "Search Appearances",
-      value: statsData.searchAppearances,
+      value: Number(statsData?.searchAppearances ?? fallbackStats.searchAppearances ?? 0),
       Icon: Search,
       trend: "+8%",
     },
     {
       label: "Application Views",
-      value: statsData.applicationViews,
+      value: Number(statsData?.applicationViews ?? fallbackStats.applicationViews ?? 0),
       Icon: TrendingUp,
       trend: "+20%",
     },
     {
       label: "Interview Invites",
-      value: statsData.interviewInvites,
+      value: Number(statsData?.interviewInvites ?? 0),
       Icon: MessageSquare,
       trend: "+2",
     },
   ];
 
   const profileStrength =
-    typeof statsData.profileStrength === "number"
+    typeof statsData?.profileStrength === "number"
       ? statsData.profileStrength
       : 75;
 
@@ -1268,7 +1289,7 @@ function Dashboard() {
               </span>
               <span className="stat-trend">{trend}</span>
             </div>
-            <strong>{value}</strong>
+            <strong className="stat-value">{typeof value === "number" ? value : 0}</strong>
             <span className="stat-label">{label}</span>
           </div>
         ))}
