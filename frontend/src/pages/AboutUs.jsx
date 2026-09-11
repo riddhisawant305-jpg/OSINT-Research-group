@@ -15,9 +15,12 @@ import {
   GraduationCap,
   Building2
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import "./AboutUs.css";
 
 function AboutUs() {
+  const { user } = useAuth();
+  const isOrg = user && (user.role === "organization" || user.role === "recruiter");
   return (
     <div className="about-page">
       {/* Hero Section */}
@@ -114,9 +117,15 @@ function AboutUs() {
               <span><strong>Trust & Integrity:</strong> Verified organization badges and transparent moderation protect companies and job seekers alike.</span>
             </li>
           </ul>
-          <Link to="/signup" className="side-btn purple">
-            Register as Organization <ArrowRight size={16} />
-          </Link>
+          {user ? (
+            <Link to="/dashboard" className="side-btn purple">
+              {isOrg ? "Manage Your Openings" : "View Employer Hub"} <ArrowRight size={16} />
+            </Link>
+          ) : (
+            <Link to="/signup?role=organization" className="side-btn purple">
+              Register as Organization <ArrowRight size={16} />
+            </Link>
+          )}
         </div>
       </section>
 
@@ -160,9 +169,15 @@ function AboutUs() {
           <h2>Ready to Take the Next Step in Your Career?</h2>
           <p>Join thousands of students and leading organizations on CareerVerse today.</p>
           <div className="cta-buttons">
-            <Link to="/signup" className="cta-primary-btn">
-              Get Started for Free <ArrowRight size={16} />
-            </Link>
+            {user ? (
+              <Link to={isOrg ? "/dashboard" : "/home"} className="cta-primary-btn">
+                {isOrg ? "Go to Organization Dashboard" : "Go to Your Feed"} <ArrowRight size={16} />
+              </Link>
+            ) : (
+              <Link to="/signup" className="cta-primary-btn">
+                Get Started for Free <ArrowRight size={16} />
+              </Link>
+            )}
             <Link to="/contact" className="cta-secondary-btn">
               Contact Our Team
             </Link>

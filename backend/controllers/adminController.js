@@ -2,7 +2,7 @@ const User = require("../models/User");
 const Post = require("../models/Post");
 const Job = require("../models/Job");
 const Application = require("../models/Application");
-const Notification = require("../models/Notification");
+const Notification = require("../models/Notification");\nconst Inquiry = require("../models/Inquiry");\nconst Faq = require("../models/Faq");
 const { generateToken } = require("../utils/jwt");
 const {
   sendUserDeletedByAdminEmail,
@@ -10,7 +10,7 @@ const {
   sendOrgDeletedByAdminEmail,
   sendJobDeletedByAdminEmail,
   sendCustomAdminEmail,
-  sendVerificationBadgeEmail,
+  sendVerificationBadgeEmail,\n  sendBroadcastEmail,
 } = require("../services/emailService");
 
 // Auto-seed or guarantee default admin exists
@@ -595,6 +595,191 @@ const sendCustomEmail = async (req, res, next) => {
   }
 };
 
+
+// -------------------------------------------------------------
+// INQUIRIES MANAGEMENT
+// -------------------------------------------------------------
+// @desc    Get all contact inquiries
+// @route   GET /api/admin/inquiries
+// @access  Private (Admin)
+const getInquiries = async (req, res, next) => {
+  try {
+    const { status, category, search } = req.query;
+    let filter = {};
+    if (status && status !== "all") filter.status = status;
+    if (category && category !== "all") filter.category = category;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { subject: { $regex: search, $options: "i" } },
+        { message: { $regex: search, $options: "i" } },
+      ];
+    }
+    const inquiries = await Inquiry.find(filter).sort({ createdAt: -1 });
+    res.status(200).json({ success: true, count: inquiries.length, data: inquiries });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update inquiry status & admin notes
+// @route   PUT /api/admin/inquiries/:id
+// @access  Private (Admin)
+const updateInquiryStatus = async (req, res, next) => {
+  try {
+    const { status, adminNotes } = req.body;
+    const inquiry = await Inquiry.findById(req.params.id);
+    if (!inquiry) {
+      return res.status(404).json({ success: false, message: "Inquiry not found" });
+    }
+    if (status) inquiry.status = status;
+    if (adminNotes !== undefined) inquiry.adminNotes = adminNotes;
+    if (status === "resolved") inquiry.repliedAt = new Date();
+    await inquiry.save();
+    res.status(200).json({ success: true, message: "Inquiry status updated", data: inquiry });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete an inquiry
+// @route   DELETE /api/admin/inquiries/:id
+// @access  Private (Admin)
+const deleteInquiry = async (req, res, next) => {
+  try {
+    const inquiry = await Inquiry.findByIdAndDelete(req.params.id);
+    if (!inquiry) {
+      return res.status(404).json({ success: false, message: "Inquiry not found" });
+    }
+    res.status(200).json({ success: true, message: "Inquiry deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -------------------------------------------------------------
+// FAQ MANAGEMENT
+// -------------------------------------------------------------
+// @desc    Get all FAQs (active + inactive) for admin
+// @route   GET /api/admin/faqs
+// @access  Private (Admin)
+const getAllFaqsAdmin = async (req, res, next) => {
+  try {
+    const faqs = await Faq.find().sort({ order: 1, createdAt: 1 });
+    res.status(200).json({ success: true, count: faqs.length, data: faqs });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Create new FAQ
+// @route   POST /api/admin/faqs
+// @access  Private (Admin)
+const createFaq = async (req, res, next) => {
+  try {
+    const { question, answer, category, order, isActive } = req.body;
+    if (!question || !answer) {
+      return res.status(400).json({ success: false, message: "Question and Answer are required" });
+    }
+    const faq = await Faq.create({
+      question: question.trim(),
+      answer: answer.trim(),
+      category: category ? category.trim() : "General",
+      order: Number(order) || 0,
+      isActive: typeof isActive === "boolean" ? isActive : true,
+    });
+    res.status(201).json({ success: true, message: "FAQ created successfully", data: faq });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update FAQ
+// @route   PUT /api/admin/faqs/:id
+// @access  Private (Admin)
+const updateFaq = async (req, res, next) => {
+  try {
+    const { question, answer, category, order, isActive } = req.body;
+    const faq = await Faq.findById(req.params.id);
+    if (!faq) {
+      return res.status(404).json({ success: false, message: "FAQ not found" });
+    }
+    if (question !== undefined) faq.question = question.trim();
+    if (answer !== undefined) faq.answer = answer.trim();
+    if (category !== undefined) faq.category = category.trim();
+    if (order !== undefined) faq.order = Number(order);
+    if (isActive !== undefined) faq.isActive = Boolean(isActive);
+    await faq.save();
+    res.status(200).json({ success: true, message: "FAQ updated successfully", data: faq });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete FAQ
+// @route   DELETE /api/admin/faqs/:id
+// @access  Private (Admin)
+const deleteFaq = async (req, res, next) => {
+  try {
+    const faq = await Faq.findByIdAndDelete(req.params.id);
+    if (!faq) {
+      return res.status(404).json({ success: false, message: "FAQ not found" });
+    }
+    res.status(200).json({ success: true, message: "FAQ deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -------------------------------------------------------------
+// BROADCAST EMAIL (Users, Organizations, All)
+// -------------------------------------------------------------
+// @desc    Broadcast email to all users, organizations, or all
+// @route   POST /api/admin/broadcast-email
+// @access  Private (Admin)
+const broadcastEmail = async (req, res, next) => {
+  try {
+    const { target = "all", subject, message } = req.body;
+    if (!subject || !message) {
+      return res.status(400).json({ success: false, message: "Email subject and message body are required" });
+    }
+
+    let query = { role: { $ne: "admin" }, email: { $exists: true, $ne: "" } };
+    if (target === "candidates" || target === "users") {
+      query.role = { $nin: ["admin", "organization", "recruiter"] };
+    } else if (target === "organizations") {
+      query.role = { $in: ["organization", "recruiter"] };
+    }
+
+    const recipients = await User.find(query).select("name companyName email");
+
+    // Asynchronously dispatch emails
+    (async () => {
+      for (const user of recipients) {
+        try {
+          await sendBroadcastEmail({
+            to: user.email,
+            recipientName: user.companyName || user.name,
+            subject: subject.trim(),
+            message: message.trim(),
+          });
+        } catch (err) {
+          console.error(`[BroadcastEmail] Failed for ${user.email}:`, err.message);
+        }
+      }
+    })();
+
+    res.status(200).json({
+      success: true,
+      message: `Broadcast email successfully queued for ${recipients.length} recipients (${target})`,
+      recipientCount: recipients.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   loginAdmin,
   getAdminStats,
@@ -612,4 +797,12 @@ module.exports = {
   ensureDefaultAdmin,
   toggleVerifyUser,
   sendCustomEmail,
+  getInquiries,
+  updateInquiryStatus,
+  deleteInquiry,
+  getAllFaqsAdmin,
+  createFaq,
+  updateFaq,
+  deleteFaq,
+  broadcastEmail,
 };

@@ -143,11 +143,6 @@ function Footer() {
                   <FileText size={14} /> Terms of Service
                 </Link>
               </li>
-              <li>
-                <Link to="/admin" onClick={scrollToTop} className="cv-admin-link-highlight">
-                  <Shield size={14} /> Super Admin Dashboard
-                </Link>
-              </li>
             </ul>
           </div>
         </div>

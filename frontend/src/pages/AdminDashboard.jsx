@@ -23,6 +23,10 @@ import {
   Clock,
   Radio,
   Mail,
+  HelpCircle,
+  Plus,
+  Edit3,
+  Check,
 } from "lucide-react";
 import API from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -161,6 +165,83 @@ const fallbackJobsList = dummyJobs.map((j, i) => ({
   createdAt: new Date(Date.now() - 86400000 * (i * 2 + 1)).toISOString(),
 }));
 
+
+const fallbackInquiriesList = [
+  {
+    _id: "inq_1",
+    name: "Aman Sharma",
+    email: "aman.sharma@example.com",
+    category: "candidate",
+    subject: "Question regarding PDF resume upload",
+    message: "Hello team, does the resume analyzer score docx format or only PDF resumes? Also how soon does the recruiter receive it? Thanks!",
+    status: "pending",
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    _id: "inq_2",
+    name: "Rhea Patel (TechVentures)",
+    email: "hr@techventures.example",
+    category: "organization",
+    subject: "Employer Verification & Job Listing limits",
+    message: "Hi CareerVerse Admin, we recently registered our company account. We want to know how we can obtain the verified badge for our hiring team.",
+    status: "in-progress",
+    createdAt: new Date(Date.now() - 86400000 * 1).toISOString(),
+  },
+  {
+    _id: "inq_3",
+    name: "Siddharth Rao",
+    email: "siddharth.rao@example.com",
+    category: "technical",
+    subject: "Mock interview audio recording query",
+    message: "I completed 3 questions on the AI mock interview. The feedback was super helpful! Will there be support for video recording soon?",
+    status: "resolved",
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+];
+
+const fallbackFaqsList = [
+  {
+    _id: "faq_1",
+    question: "How does 100% online email support work at CareerVerse?",
+    answer: "We believe in direct, thoughtful, and documented support without wait times or endless call queues. When you submit a request or email us at careerverse999@gmail.com, our support team immediately reviews your message and delivers comprehensive, personalized assistance directly to your inbox.",
+    category: "Support",
+    order: 1,
+    isActive: true,
+  },
+  {
+    _id: "faq_2",
+    question: "How do students apply for jobs on CareerVerse?",
+    answer: "Students can navigate to the Jobs section, review active openings, and click 'Apply'. If your profile includes an uploaded PDF resume, it is automatically shared with the employer alongside your application. You will also receive an instant confirmation email and live updates whenever the employer reviews or updates your application.",
+    category: "Candidates",
+    order: 2,
+    isActive: true,
+  },
+  {
+    _id: "faq_3",
+    question: "How do organizations list new job openings?",
+    answer: "Organizations and hiring managers can register for a company account, access the dedicated Employer Dashboard, and publish open positions with custom requirements, salaries, and remote/hybrid tags. Candidates apply directly, and applicant resumes are dispatched straight to your hiring inbox.",
+    category: "Employers",
+    order: 3,
+    isActive: true,
+  },
+  {
+    _id: "faq_4",
+    question: "How does the AI Practice Interviewer work?",
+    answer: "Our AI Practice Interview simulator crafts dynamic questions based on your preferred role, senior level, and industry. You can respond via voice or text to receive instant, constructive scoring on communication clarity, technical depth, and confidence.",
+    category: "AI Suite",
+    order: 4,
+    isActive: true,
+  },
+  {
+    _id: "faq_5",
+    question: "What is the CareerVerse Verified badge and how is it awarded?",
+    answer: "The CareerVerse Verified badge recognizes authentic talent and verified hiring entities. Super Administrators evaluate profile completeness, institutional or corporate credentials, and adherence to community guidelines before granting this prestigious badge.",
+    category: "Verification",
+    order: 5,
+    isActive: true,
+  },
+];
+
 const fallbackStatsData = {
   totalUsers: fallbackCandidates.length,
   totalOrganizations: fallbackOrgs.length,
@@ -193,6 +274,25 @@ function AdminDashboard() {
   const [orgsList, setOrgsList] = useState(fallbackOrgs);
   const [postsList, setPostsList] = useState(fallbackPostsList);
   const [jobsList, setJobsList] = useState(fallbackJobsList);
+
+  const [inquiriesList, setInquiriesList] = useState(fallbackInquiriesList);
+  const [faqsList, setFaqsList] = useState(fallbackFaqsList);
+  const [inquiryModal, setInquiryModal] = useState({ open: false, inquiry: null });
+  const [faqModal, setFaqModal] = useState({
+    open: false,
+    isEdit: false,
+    faq: { _id: "", question: "", answer: "", category: "General", order: 0, isActive: true },
+    loading: false,
+  });
+  const [broadcastEmailModalOpen, setBroadcastEmailModalOpen] = useState(false);
+  const [broadcastEmailForm, setBroadcastEmailForm] = useState({
+    target: "all",
+    subject: "",
+    message: "",
+  });
+  const [broadcastingEmail, setBroadcastingEmail] = useState(false);
+  const [inquiryFilterStatus, setInquiryFilterStatus] = useState("all");
+
   const [loadingData, setLoadingData] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
 
@@ -279,12 +379,14 @@ function AdminDashboard() {
     const headers = getAdminHeaders(tokenOverride);
 
     try {
-      const [statsRes, usersRes, orgsRes, postsRes, jobsRes] = await Promise.allSettled([
+      const [statsRes, usersRes, orgsRes, postsRes, jobsRes, inquiriesRes, faqsRes] = await Promise.allSettled([
         API.get("/admin/stats", headers),
         API.get("/admin/users", headers),
         API.get("/admin/organizations", headers),
         API.get("/admin/posts", headers),
         API.get("/admin/jobs", headers),
+        API.get("/admin/inquiries", headers),
+        API.get("/admin/faqs", headers),
       ]);
 
       // Check if unauthorized (401 / 403)
@@ -324,6 +426,12 @@ function AdminDashboard() {
       if (jobsRes.status === "fulfilled" && Array.isArray(jobsRes.value.data?.data)) {
         setJobsList(jobsRes.value.data.data);
         anyFulfilled = true;
+      }
+      if (inquiriesRes && inquiriesRes.status === "fulfilled" && Array.isArray(inquiriesRes.value.data?.data)) {
+        setInquiriesList(inquiriesRes.value.data.data);
+      }
+      if (faqsRes && faqsRes.status === "fulfilled" && Array.isArray(faqsRes.value.data?.data)) {
+        setFaqsList(faqsRes.value.data.data);
       }
 
       setIsLiveConnected(anyFulfilled);
@@ -591,6 +699,128 @@ function AdminDashboard() {
   };
 
   // -----------------------------------------------------------
+  
+  // -----------------------------------------------------------
+  // ACTIONS: INQUIRIES
+  // -----------------------------------------------------------
+  const handleUpdateInquiryStatus = async (inquiryId, newStatus) => {
+    try {
+      const res = await API.put(`/admin/inquiries/${inquiryId}`, { status: newStatus }, getAdminHeaders());
+      setInquiriesList((prev) =>
+        prev.map((inq) => (inq._id === inquiryId ? { ...inq, status: newStatus } : inq))
+      );
+      if (inquiryModal.inquiry?._id === inquiryId) {
+        setInquiryModal((prev) => ({ ...prev, inquiry: { ...prev.inquiry, status: newStatus } }));
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to update inquiry status.");
+    }
+  };
+
+  const handleDeleteInquiry = async (inquiryId) => {
+    if (!window.confirm("Are you sure you want to delete this user inquiry?")) return;
+    try {
+      await API.delete(`/admin/inquiries/${inquiryId}`, getAdminHeaders());
+      setInquiriesList((prev) => prev.filter((inq) => inq._id !== inquiryId));
+      if (inquiryModal.open && inquiryModal.inquiry?._id === inquiryId) {
+        setInquiryModal({ open: false, inquiry: null });
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete inquiry.");
+    }
+  };
+
+  const handleReplyToInquiry = (inquiry) => {
+    handleOpenCustomEmail({
+      to: inquiry.email,
+      name: inquiry.name,
+      subject: `Re: ${inquiry.subject || "Your Inquiry to CareerVerse"}`,
+      message: `Hi ${inquiry.name},\n\nThank you for reaching out to CareerVerse Support regarding: "${inquiry.subject}".\n\n`,
+    });
+  };
+
+  // -----------------------------------------------------------
+  // ACTIONS: FAQS
+  // -----------------------------------------------------------
+  const handleOpenAddFaq = () => {
+    setFaqModal({
+      open: true,
+      isEdit: false,
+      faq: { _id: "", question: "", answer: "", category: "General", order: faqsList.length + 1, isActive: true },
+      loading: false,
+    });
+  };
+
+  const handleOpenEditFaq = (faq) => {
+    setFaqModal({
+      open: true,
+      isEdit: true,
+      faq: { ...faq },
+      loading: false,
+    });
+  };
+
+  const handleSaveFaq = async (e) => {
+    e.preventDefault();
+    const { _id, question, answer, category, order, isActive } = faqModal.faq;
+    if (!question.trim() || !answer.trim()) return;
+
+    setFaqModal((prev) => ({ ...prev, loading: true }));
+    try {
+      if (faqModal.isEdit) {
+        const res = await API.put(`/admin/faqs/${_id}`, { question, answer, category, order, isActive }, getAdminHeaders());
+        setFaqsList((prev) => prev.map((f) => (f._id === _id ? res.data.data || { ...f, question, answer, category, order, isActive } : f)));
+      } else {
+        const res = await API.post("/admin/faqs", { question, answer, category, order, isActive }, getAdminHeaders());
+        setFaqsList((prev) => [...prev, res.data.data || { _id: `faq_${Date.now()}`, question, answer, category, order, isActive }]);
+      }
+      setFaqModal({ open: false, isEdit: false, faq: null, loading: false });
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to save FAQ.");
+      setFaqModal((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleToggleFaqActive = async (faq) => {
+    try {
+      const updatedStatus = !faq.isActive;
+      await API.put(`/admin/faqs/${faq._id}`, { isActive: updatedStatus }, getAdminHeaders());
+      setFaqsList((prev) => prev.map((f) => (f._id === faq._id ? { ...f, isActive: updatedStatus } : f)));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to update FAQ status.");
+    }
+  };
+
+  const handleDeleteFaq = async (faqId) => {
+    if (!window.confirm("Are you sure you want to delete this FAQ entry?")) return;
+    try {
+      await API.delete(`/admin/faqs/${faqId}`, getAdminHeaders());
+      setFaqsList((prev) => prev.filter((f) => f._id !== faqId));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete FAQ.");
+    }
+  };
+
+  // -----------------------------------------------------------
+  // ACTIONS: BROADCAST EMAIL
+  // -----------------------------------------------------------
+  const handleSendBroadcastEmail = async (e) => {
+    e.preventDefault();
+    if (!broadcastEmailForm.subject.trim() || !broadcastEmailForm.message.trim()) return;
+
+    setBroadcastingEmail(true);
+    try {
+      const res = await API.post("/admin/broadcast-email", broadcastEmailForm, getAdminHeaders());
+      alert(res.data.message || "Broadcast email successfully sent.");
+      setBroadcastEmailModalOpen(false);
+      setBroadcastEmailForm({ target: "all", subject: "", message: "" });
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to send broadcast email.");
+    } finally {
+      setBroadcastingEmail(false);
+    }
+  };
+
   // ACTIONS: SYSTEM BROADCAST
   // -----------------------------------------------------------
   const handleSendBroadcast = async (e) => {
@@ -743,6 +973,18 @@ function AdminDashboard() {
           >
             <Briefcase size={18} /> Job Listings ({jobsList.length})
           </button>
+          <button
+            className={`admin-nav-item ${activeTab === "inquiries" ? "active" : ""}`}
+            onClick={() => setActiveTab("inquiries")}
+          >
+            <Mail size={18} /> Support Inquiries ({inquiriesList.length})
+          </button>
+          <button
+            className={`admin-nav-item ${activeTab === "faqs" ? "active" : ""}`}
+            onClick={() => setActiveTab("faqs")}
+          >
+            <HelpCircle size={18} /> FAQs Management ({faqsList.length})
+          </button>
         </nav>
 
         <div className="admin-sidebar-footer">
@@ -752,6 +994,13 @@ function AdminDashboard() {
             onClick={() => handleOpenCustomEmail()}
           >
             <Mail size={16} /> Compose Email
+          </button>
+          <button
+            className="admin-broadcast-btn"
+            style={{ marginBottom: 8, background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+            onClick={() => setBroadcastEmailModalOpen(true)}
+          >
+            <Mail size={16} /> Broadcast Email
           </button>
           <button
             className="admin-broadcast-btn"
@@ -1582,6 +1831,256 @@ function AdminDashboard() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      
+      {/* ----------------------------------------------------------- */}
+      {/* MODAL: VIEW INQUIRY DETAILS                                 */}
+      {/* ----------------------------------------------------------- */}
+      {inquiryModal.open && inquiryModal.inquiry && (
+        <div className="admin-modal-overlay" onClick={() => setInquiryModal({ open: false, inquiry: null })}>
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 620 }}>
+            <div className="admin-modal-header">
+              <div>
+                <h3>Inquiry from {inquiryModal.inquiry.name}</h3>
+                <p>{inquiryModal.inquiry.email} • Category: {inquiryModal.inquiry.category || "General"}</p>
+              </div>
+              <button className="admin-modal-close" onClick={() => setInquiryModal({ open: false, inquiry: null })}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="admin-modal-body">
+              <div className="inquiry-detail-box">
+                <div className="inquiry-detail-row">
+                  <strong>Subject:</strong>
+                  <span>{inquiryModal.inquiry.subject}</span>
+                </div>
+                <div className="inquiry-detail-row">
+                  <strong>Submitted:</strong>
+                  <span>{new Date(inquiryModal.inquiry.createdAt).toLocaleString()}</span>
+                </div>
+                <div className="inquiry-detail-row">
+                  <strong>Current Status:</strong>
+                  <select
+                    className={`inquiry-status-select ${inquiryModal.inquiry.status}`}
+                    value={inquiryModal.inquiry.status}
+                    onChange={(e) => handleUpdateInquiryStatus(inquiryModal.inquiry._id, e.target.value)}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In-Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+                <div className="inquiry-message-view">
+                  <strong>Message Content:</strong>
+                  <div className="message-bubble">{inquiryModal.inquiry.message}</div>
+                </div>
+              </div>
+            </div>
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-modal-btn cancel"
+                onClick={() => setInquiryModal({ open: false, inquiry: null })}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="admin-primary-btn"
+                onClick={() => {
+                  const inq = inquiryModal.inquiry;
+                  setInquiryModal({ open: false, inquiry: null });
+                  handleReplyToInquiry(inq);
+                }}
+              >
+                <Mail size={16} /> Reply via Official Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------- */}
+      {/* MODAL: ADD / EDIT FAQ                                       */}
+      {/* ----------------------------------------------------------- */}
+      {faqModal.open && (
+        <div className="admin-modal-overlay" onClick={() => setFaqModal({ open: false, isEdit: false, faq: null, loading: false })}>
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 580 }}>
+            <div className="admin-modal-header">
+              <div>
+                <h3>{faqModal.isEdit ? "Edit Frequently Asked Question" : "Add New FAQ"}</h3>
+                <p>Manage question, answer, and visibility for all users.</p>
+              </div>
+              <button className="admin-modal-close" onClick={() => setFaqModal({ open: false, isEdit: false, faq: null, loading: false })}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveFaq} className="admin-modal-form">
+              <div className="admin-form-group">
+                <label>Question *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. How do I apply for jobs on CareerVerse?"
+                  value={faqModal.faq?.question || ""}
+                  onChange={(e) => setFaqModal({ ...faqModal, faq: { ...faqModal.faq, question: e.target.value } })}
+                  required
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label>Answer *</label>
+                <textarea
+                  rows={5}
+                  placeholder="Provide a thorough, informative answer..."
+                  value={faqModal.faq?.answer || ""}
+                  onChange={(e) => setFaqModal({ ...faqModal, faq: { ...faqModal.faq, answer: e.target.value } })}
+                  required
+                />
+              </div>
+
+              <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="admin-form-group">
+                  <label>Category</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Support, Candidates, Employers"
+                    value={faqModal.faq?.category || "General"}
+                    onChange={(e) => setFaqModal({ ...faqModal, faq: { ...faqModal.faq, category: e.target.value } })}
+                  />
+                </div>
+                <div className="admin-form-group">
+                  <label>Display Order (Priority)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={faqModal.faq?.order || 0}
+                    onChange={(e) => setFaqModal({ ...faqModal, faq: { ...faqModal.faq, order: parseInt(e.target.value, 10) || 0 } })}
+                  />
+                </div>
+              </div>
+
+              <div className="admin-form-group" style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <input
+                  type="checkbox"
+                  id="faqIsActive"
+                  checked={faqModal.faq?.isActive ?? true}
+                  onChange={(e) => setFaqModal({ ...faqModal, faq: { ...faqModal.faq, isActive: e.target.checked } })}
+                  style={{ width: "auto", cursor: "pointer" }}
+                />
+                <label htmlFor="faqIsActive" style={{ margin: 0, cursor: "pointer", fontWeight: 600 }}>
+                  Active & Visible on Public Pages
+                </label>
+              </div>
+
+              <div className="admin-modal-actions">
+                <button
+                  type="button"
+                  className="admin-modal-btn cancel"
+                  onClick={() => setFaqModal({ open: false, isEdit: false, faq: null, loading: false })}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-primary-btn"
+                  disabled={faqModal.loading}
+                >
+                  {faqModal.loading ? "Saving..." : faqModal.isEdit ? "Update FAQ" : "Create FAQ"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------- */}
+      {/* MODAL: BROADCAST EMAIL TO USERS / ORGANIZATIONS             */}
+      {/* ----------------------------------------------------------- */}
+      {broadcastEmailModalOpen && (
+        <div className="admin-modal-overlay" onClick={() => setBroadcastEmailModalOpen(false)}>
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640 }}>
+            <div className="admin-modal-header">
+              <div>
+                <h3>Broadcast Official Email</h3>
+                <p>Dispatch branded announcement emails directly to user and organization inboxes.</p>
+              </div>
+              <button className="admin-modal-close" onClick={() => setBroadcastEmailModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendBroadcastEmail} className="admin-modal-form">
+              <div className="admin-form-group">
+                <label>Target Audience *</label>
+                <div className="broadcast-target-selector">
+                  {[
+                    { id: "all", label: "🌐 All Members", desc: "Both Candidates & Organizations" },
+                    { id: "candidates", label: "👥 All Users", desc: "Students & Job Seekers Only" },
+                    { id: "organizations", label: "🏢 All Organizations", desc: "Hiring Companies & Recruiters" },
+                  ].map((tgt) => (
+                    <div
+                      key={tgt.id}
+                      className={`target-option ${broadcastEmailForm.target === tgt.id ? "active" : ""}`}
+                      onClick={() => setBroadcastEmailForm({ ...broadcastEmailForm, target: tgt.id })}
+                    >
+                      <strong>{tgt.label}</strong>
+                      <span>{tgt.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="admin-form-group">
+                <label>Email Subject *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Major Platform Update & New Career Opportunities"
+                  value={broadcastEmailForm.subject}
+                  onChange={(e) => setBroadcastEmailForm({ ...broadcastEmailForm, subject: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label>Email Message Body *</label>
+                <textarea
+                  rows={7}
+                  placeholder="Write your official message to members here..."
+                  value={broadcastEmailForm.message}
+                  onChange={(e) => setBroadcastEmailForm({ ...broadcastEmailForm, message: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="broadcast-email-note">
+                <Mail size={16} />
+                <span>
+                  Dispatches via CareerVerse SMTP (<code>careerverse999@gmail.com</code>) using the responsive branded template with direct portal button.
+                </span>
+              </div>
+
+              <div className="admin-modal-actions">
+                <button
+                  type="button"
+                  className="admin-modal-btn cancel"
+                  onClick={() => setBroadcastEmailModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-primary-btn"
+                  style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+                  disabled={broadcastingEmail}
+                >
+                  {broadcastingEmail ? "Dispatching Broadcast..." : "Send Broadcast Email"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

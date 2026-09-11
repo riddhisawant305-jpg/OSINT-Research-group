@@ -823,6 +823,31 @@ const sendContactSupportEmail = async ({ name, email, subject, category, message
   return { success: true };
 };
 
+// 16. Broadcast Email to Users / Organizations
+const sendBroadcastEmail = async ({ to, recipientName, subject, message }) => {
+  if (!to) return { success: false, error: "Recipient email missing" };
+
+  return sendMailSafe({
+    from: '"CareerVerse Announcements" <careerverse999@gmail.com>',
+    to: to.trim(),
+    subject: subject || "Announcement from CareerVerse",
+    html: renderEmailTemplate({
+      title: subject || "CareerVerse Platform Announcement",
+      headline: "Official CareerVerse Broadcast Announcement",
+      bodyContent: `
+        <h2 class="greeting">Hello ${recipientName || "Member"},</h2>
+        <div style="font-size: 15px; color: #334155; line-height: 1.7; white-space: pre-wrap; margin-bottom: 24px;">
+          ${message}
+        </div>
+        <p>Thank you for being an active part of our thriving ecosystem.</p>
+        <p>Warm regards,<br><strong>The CareerVerse Team</strong></p>
+      `,
+      actionUrl: "/home",
+      actionText: "Open CareerVerse",
+    }),
+  });
+};
+
 module.exports = {
   transporter,
   sendWelcomeEmail,
@@ -853,5 +878,6 @@ module.exports = {
   sendVerificationBadgeEmail,
   sendVerifiedBadgeEmail,
   sendContactSupportEmail,
+  sendBroadcastEmail,
 };
 

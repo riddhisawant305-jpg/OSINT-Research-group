@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Mail,
   Send,
@@ -9,10 +9,36 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronUp,
-  Sparkles
+  Sparkles,
+  Copy,
+  Check,
+  ExternalLink
 } from "lucide-react";
 import API from "../api/client";
 import "./ContactSupport.css";
+
+const defaultFaqsList = [
+  {
+    q: "How does 100% online email support work at CareerVerse?",
+    a: "We believe in direct, thoughtful, and documented support without wait times or endless call queues. When you submit a request or email us at careerverse999@gmail.com, our support team immediately reviews your message and delivers comprehensive, personalized assistance directly to your inbox."
+  },
+  {
+    q: "How do students apply for jobs on CareerVerse?",
+    a: "Students can navigate to the Jobs section, review active openings, and click 'Apply'. If your profile includes an uploaded PDF resume, it is automatically shared with the employer alongside your application. You will also receive an instant confirmation email and live updates whenever the employer reviews or updates your application."
+  },
+  {
+    q: "How do organizations list new job openings?",
+    a: "Hiring organizations and recruiters can register with their work email or Google account, navigate to their Dashboard, and create new job openings specifying title, location, salary, requirements, and workplace type. When candidates apply, the organization receives an immediate email notification with candidate information and the applicant's resume attached."
+  },
+  {
+    q: "What is the CareerVerse Verified Badge?",
+    a: "The CareerVerse Verified badge (marked with a blue checkmark) is an official platform accreditation granted by Super Administrators to vetted candidates and legitimate hiring organizations to build high trust and prevent fraudulent activity."
+  },
+  {
+    q: "How does the AI Career Suite assist job seekers?",
+    a: "Our AI suite includes a Gemini-powered Resume Analyzer (offering actionable scoring and ATS tips), an interactive Mock Interview simulator, and an AI Career Mentor for strategic career coaching."
+  }
+];
 
 function ContactSupport() {
   const [form, setForm] = useState({
@@ -25,60 +51,32 @@ function ContactSupport() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  // FAQ toggle state
-  const [openFaq, setOpenFaq] = useState(null);
+  // Dynamic FAQs state
+  const [faqs, setFaqs] = useState(defaultFaqsList);
 
-  const toggleFaq = (idx) => {
-    setOpenFaq(openFaq === idx ? null : idx);
+  useEffect(() => {
+    let mounted = true;
+    const fetchFaqs = async () => {
+      try {
+        const res = await API.get("/faqs");
+        if (mounted && res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          setFaqs(res.data.data.map(f => ({ q: f.question, a: f.answer, id: f._id })));
+        }
+      } catch (err) {
+        console.warn("Using fallback FAQs:", err.message);
+      }
+    };
+    fetchFaqs();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText("careerverse999@gmail.com");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSubmitting(true);
-
-    try {
-      // Send inquiry to backend if endpoint available or emulate success
-      await API.post("/contact", form).catch(() => {
-        // Graceful fallback for local preview
-        console.log("Inquiry submitted via email support channel:", form);
-      });
-      setSubmitted(true);
-      setForm({ name: "", email: "", subject: "", category: "general", message: "" });
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to send message. Please email us directly at careerverse999@gmail.com");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const faqs = [
-    {
-      q: "How does 100% online email support work at CareerVerse?",
-      a: "We believe in direct, thoughtful, and documented support without wait times or endless call queues. When you submit a request or email us at careerverse999@gmail.com, our support team immediately reviews your message and delivers comprehensive, personalized assistance directly to your inbox."
-    },
-    {
-      q: "How do students apply for jobs on CareerVerse?",
-      a: "Students can navigate to the Jobs section, review active openings, and click 'Apply'. If your profile includes an uploaded PDF resume, it is automatically shared with the employer alongside your application. You will also receive an instant confirmation email and live updates whenever the employer reviews or updates your application."
-    },
-    {
-      q: "How do organizations list new job openings?",
-      a: "Hiring organizations and recruiters can register with their work email or Google account, navigate to their Dashboard, and create new job openings specifying title, location, salary, requirements, and workplace type. When candidates apply, the organization receives an immediate email notification with candidate information and the applicant's resume attached."
-    },
-    {
-      q: "What is the CareerVerse Verified Badge?",
-      a: "The CareerVerse Verified badge (marked with a blue checkmark) is an official platform accreditation granted by Super Administrators to vetted candidates and legitimate hiring organizations to build high trust and prevent fraudulent activity."
-    },
-    {
-      q: "How does the AI Career Suite assist job seekers?",
-      a: "Our AI suite includes a Gemini-powered Resume Analyzer (offering actionable scoring and ATS tips), an interactive Mock Interview simulator, and an AI Career Mentor for strategic career coaching."
-    }
-  ];
 
   return (
     <div className="contact-page">
@@ -225,11 +223,39 @@ function ContactSupport() {
           <div className="sidebar-card">
             <h3>Direct Email Desk</h3>
             <p className="sidebar-desc">
-              Prefer writing directly from your favorite email client? Send your message to our official support address:
+              Prefer writing directly from your favorite email client? Reach our official online support team directly:
             </p>
-            <a href="mailto:careerverse999@gmail.com" className="email-action-link">
-              <Mail size={18} /> careerverse999@gmail.com
-            </a>
+            <div className="direct-email-actions">
+              <a
+                href="mailto:careerverse999@gmail.com?subject=CareerVerse%20Support%20Inquiry"
+                className="email-action-link"
+                onClick={() => {
+                  window.location.href = "mailto:careerverse999@gmail.com?subject=CareerVerse%20Support%20Inquiry";
+                }}
+              >
+                <Mail size={18} /> careerverse999@gmail.com
+              </a>
+
+              <div className="direct-email-buttons">
+                <button
+                  type="button"
+                  className="btn-copy-email"
+                  onClick={handleCopyEmail}
+                >
+                  {copied ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
+                  <span>{copied ? "Copied to Clipboard!" : "Copy Email"}</span>
+                </button>
+
+                <a
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=careerverse999@gmail.com&su=CareerVerse%20Support%20Inquiry"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-open-gmail"
+                >
+                  <ExternalLink size={14} /> Open in Gmail Web
+                </a>
+              </div>
+            </div>
           </div>
 
           <div className="sidebar-card">

@@ -16,6 +16,14 @@ const {
   broadcastNotification,
   toggleVerifyUser,
   sendCustomEmail,
+  getInquiries,
+  updateInquiryStatus,
+  deleteInquiry,
+  getAllFaqsAdmin,
+  createFaq,
+  updateFaq,
+  deleteFaq,
+  broadcastEmail,
 } = require("../controllers/adminController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
@@ -49,6 +57,18 @@ router.delete("/jobs/:id", deleteJob);
 
 // System broadcasts & Custom emails
 router.post("/broadcast", broadcastNotification);
+router.post("/broadcast-email", broadcastEmail);
 router.post("/send-email", sendCustomEmail);
+
+// User Inquiries Management
+router.get("/inquiries", getInquiries);
+router.put("/inquiries/:id", updateInquiryStatus);
+router.delete("/inquiries/:id", deleteInquiry);
+
+// FAQ Management
+router.get("/faqs", getAllFaqsAdmin);
+router.post("/faqs", createFaq);
+router.put("/faqs/:id", updateFaq);
+router.delete("/faqs/:id", deleteFaq);
 
 module.exports = router;
