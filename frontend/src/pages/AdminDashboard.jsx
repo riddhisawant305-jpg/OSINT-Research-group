@@ -1025,6 +1025,8 @@ function AdminDashboard() {
               {activeTab === "organizations" && "Hiring Organizations Directory"}
               {activeTab === "posts" && "Platform Posts & Feed Moderation"}
               {activeTab === "jobs" && "Active Job Openings Moderation"}
+              {activeTab === "inquiries" && "Support Inquiries & Desk"}
+              {activeTab === "faqs" && "Frequently Asked Questions Management"}
             </h2>
             <p>Live administration portal for monitoring and moderating CareerVerse.</p>
           </div>
@@ -1680,6 +1682,228 @@ function AdminDashboard() {
                                 className="admin-action-btn delete-item-btn"
                                 onClick={() => handlePromptDeleteJob(job)}
                                 title="Delete job posting"
+                              >
+                                <Trash2 size={14} /> Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* SUPPORT INQUIRIES TAB */}
+          {activeTab === "inquiries" && (
+            <div className="admin-section">
+              <div className="admin-section-bar">
+                <div className="inquiry-filter-group">
+                  {[
+                    { id: "all", label: "All Inquiries" },
+                    { id: "pending", label: "Pending" },
+                    { id: "in-progress", label: "In-Progress" },
+                    { id: "resolved", label: "Resolved" },
+                    { id: "closed", label: "Closed" },
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      className={`filter-pill ${inquiryFilterStatus === filter.id ? "active" : ""}`}
+                      onClick={() => setInquiryFilterStatus(filter.id)}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="admin-search-wrapper">
+                  <Search size={16} className="admin-search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search inquiries by user name, email, or subject..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="admin-search-input"
+                  />
+                </div>
+              </div>
+
+              <div className="admin-card-table">
+                <table className="admin-table full-table">
+                  <thead>
+                    <tr>
+                      <th>Sender Info</th>
+                      <th>Category & Subject</th>
+                      <th>Status</th>
+                      <th>Submitted Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const filteredInquiries = inquiriesList.filter((inq) => {
+                        const matchesFilter = inquiryFilterStatus === "all" || inq.status === inquiryFilterStatus;
+                        const query = searchQuery.toLowerCase();
+                        const matchesSearch =
+                          inq.name?.toLowerCase().includes(query) ||
+                          inq.email?.toLowerCase().includes(query) ||
+                          inq.subject?.toLowerCase().includes(query) ||
+                          inq.message?.toLowerCase().includes(query);
+                        return matchesFilter && matchesSearch;
+                      });
+
+                      if (filteredInquiries.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={5} className="admin-table-empty">
+                              No inquiries found matching current filters.
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return filteredInquiries.map((inquiry) => (
+                        <tr key={inquiry._id}>
+                          <td>
+                            <strong>{inquiry.name}</strong>
+                            <br />
+                            <small className="text-muted">{inquiry.email}</small>
+                          </td>
+                          <td>
+                            <span className={`category-badge ${inquiry.category || "general"}`}>
+                              {inquiry.category || "General"}
+                            </span>
+                            <br />
+                            <strong>{inquiry.subject}</strong>
+                          </td>
+                          <td>
+                            <select
+                              className={`inquiry-status-select ${inquiry.status || "pending"}`}
+                              value={inquiry.status || "pending"}
+                              onChange={(e) => handleUpdateInquiryStatus(inquiry._id, e.target.value)}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="in-progress">In-Progress</option>
+                              <option value="resolved">Resolved</option>
+                              <option value="closed">Closed</option>
+                            </select>
+                          </td>
+                          <td>
+                            <small>{inquiry.createdAt ? new Date(inquiry.createdAt).toLocaleDateString() : "Recent"}</small>
+                          </td>
+                          <td>
+                            <div className="admin-action-row">
+                              <button
+                                type="button"
+                                className="admin-action-btn view-posts-btn"
+                                onClick={() => setInquiryModal({ open: true, inquiry })}
+                                title="View Message Details"
+                              >
+                                <Eye size={14} /> View
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-action-btn email-user-btn"
+                                onClick={() => handleReplyToInquiry(inquiry)}
+                                title="Reply via Email"
+                              >
+                                <Mail size={14} /> Reply
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-action-btn delete-item-btn"
+                                onClick={() => handleDeleteInquiry(inquiry._id)}
+                                title="Delete Inquiry"
+                              >
+                                <Trash2 size={14} /> Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* FAQS MANAGEMENT TAB */}
+          {activeTab === "faqs" && (
+            <div className="admin-section">
+              <div className="admin-section-bar">
+                <span className="total-count-pill">
+                  Total FAQs ({faqsList.length}) • Active on Public Pages ({faqsList.filter((f) => f.isActive).length})
+                </span>
+                <button
+                  type="button"
+                  className="admin-primary-btn"
+                  onClick={handleOpenAddFaq}
+                >
+                  <Plus size={16} /> Add New FAQ
+                </button>
+              </div>
+
+              <div className="admin-card-table">
+                <table className="admin-table full-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 80 }}>Order</th>
+                      <th>Question & Answer</th>
+                      <th>Category</th>
+                      <th>Status (Public)</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {faqsList.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="admin-table-empty">
+                          No FAQs available. Click "Add New FAQ" to create one.
+                        </td>
+                      </tr>
+                    ) : (
+                      faqsList.map((faq) => (
+                        <tr key={faq._id || faq.id}>
+                          <td>
+                            <span className="count-badge">#{faq.order ?? 0}</span>
+                          </td>
+                          <td>
+                            <strong>{faq.question}</strong>
+                            <p style={{ margin: "4px 0 0", color: "#475569", fontSize: 13, lineHeight: 1.4 }}>
+                              {faq.answer.length > 180 ? `${faq.answer.substring(0, 180)}...` : faq.answer}
+                            </p>
+                          </td>
+                          <td>
+                            <span className="category-badge general">{faq.category || "General"}</span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className={`faq-active-toggle ${faq.isActive ? "active" : "inactive"}`}
+                              onClick={() => handleToggleFaqActive(faq)}
+                              title={faq.isActive ? "Click to deactivate" : "Click to activate"}
+                            >
+                              {faq.isActive ? "● Active" : "○ Inactive"}
+                            </button>
+                          </td>
+                          <td>
+                            <div className="admin-action-row">
+                              <button
+                                type="button"
+                                className="admin-action-btn edit-user-btn"
+                                onClick={() => handleOpenEditFaq(faq)}
+                                title="Edit FAQ"
+                              >
+                                <Edit3 size={14} /> Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-action-btn delete-item-btn"
+                                onClick={() => handleDeleteFaq(faq._id || faq.id)}
+                                title="Delete FAQ"
                               >
                                 <Trash2 size={14} /> Delete
                               </button>

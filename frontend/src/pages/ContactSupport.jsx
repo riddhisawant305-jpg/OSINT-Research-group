@@ -77,6 +77,33 @@ function ContactSupport() {
     return () => { mounted = false; };
   }, []);
 
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      await API.post("/contact", form);
+      setSubmitted(true);
+      setForm({
+        name: "",
+        email: "",
+        subject: "",
+        category: "general",
+        message: ""
+      });
+    } catch (err) {
+      setError(
+        err.response?.data?.message || err.message || "Failed to send inquiry. Please try again or email us directly."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCopyEmail = () => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
