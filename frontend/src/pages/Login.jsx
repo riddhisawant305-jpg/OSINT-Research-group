@@ -1,16 +1,81 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
+const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  "927361270744-t93si7t5g6ssuk134913hta9i8gvahgf.apps.googleusercontent.com";
+
 function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+
+  useEffect(() => {
+    let intervalId = null;
+
+    const renderGoogleBtn = () => {
+      if (window.google?.accounts?.id) {
+        setGoogleLoaded(true);
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        });
+
+        const btnEl = document.getElementById("googleSignInDiv");
+        if (btnEl) {
+          btnEl.innerHTML = "";
+          window.google.accounts.id.renderButton(btnEl, {
+            theme: "outline",
+            size: "large",
+            width: 320,
+            text: "continue_with",
+            shape: "rectangular",
+          });
+        }
+        return true;
+      }
+      return false;
+    };
+
+    if (!renderGoogleBtn()) {
+      intervalId = setInterval(() => {
+        if (renderGoogleBtn() && intervalId) {
+          clearInterval(intervalId);
+        }
+      }, 200);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
+
+  const handleGoogleResponse = async (response) => {
+    if (!response?.credential) return;
+    setError("");
+    setLoading(true);
+    try {
+      const res = await googleLogin(response.credential, "student");
+      if (res.data?.role === "organization" || res.data?.role === "recruiter") {
+        navigate("/dashboard");
+      } else {
+        navigate("/home");
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.message || err.message || "Google Sign-In failed"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -93,7 +158,11 @@ function Login() {
               required
             />
 
-            <div className="forgot-password">
+            <div
+              className="forgot-password"
+              onClick={() => navigate("/forgot-password")}
+              style={{ cursor: "pointer" }}
+            >
               Forgot Password?
             </div>
 
@@ -107,10 +176,33 @@ function Login() {
             <span>or</span>
           </div>
 
-          <button type="button" className="google-btn">
-            <span>G</span>
-            Continue with Google
-          </button>
+          <div
+            id="googleSignInDiv"
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              minHeight: "44px",
+              marginBottom: "6px",
+            }}
+          ></div>
+
+          {!googleLoaded && (
+            <button
+              type="button"
+              className="google-btn"
+              onClick={() => {
+                if (window.google?.accounts?.id) {
+                  window.google.accounts.id.prompt();
+                } else {
+                  setError("Google Services loading. Please try again in a moment.");
+                }
+              }}
+            >
+              <span>G</span>
+              Continue with Google
+            </button>
+          )}
 
           <p className="signup-link">
             Don't have an account?

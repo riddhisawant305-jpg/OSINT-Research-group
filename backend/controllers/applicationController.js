@@ -1,7 +1,14 @@
 const Application = require("../models/Application");
 const Job = require("../models/Job");
+const User = require("../models/User");
 const mongoose = require("mongoose");
 const { createNotification } = require("./notificationController");
+const {
+  sendJobApplicationSubmittedEmail,
+  sendJobApplicationReceivedOrgEmail,
+  sendJobApplicationStatusUpdateEmail,
+  sendCandidateHiredOrgEmail,
+} = require("../services/emailService");
 
 // Helper to find job by either ObjectId or numericId
 const findJobByAnyId = async (idParam) => {
@@ -63,6 +70,39 @@ const applyForJob = async (req, res, next) => {
     // Increment applicantsCount on Job
     job.applicantsCount = (job.applicantsCount || 0) + 1;
     await job.save();
+
+    // Populate recruiter details to obtain organization email
+    await job.populate("recruiter", "name email companyName");
+
+    // 1. Asynchronously send confirmation email to the applicant
+    if (req.user.email) {
+      sendJobApplicationSubmittedEmail({
+        to: req.user.email,
+        applicantName: req.user.name,
+        jobTitle: job.title,
+        companyName: job.company,
+        location: job.location,
+        salary: job.salary,
+        type: job.type,
+      }).catch((err) => console.warn("[Application] Applicant confirmation email error:", err.message));
+    }
+
+    // 2. Asynchronously notify organization with applicant details and resume attachment
+    const recruiterEmail = job.recruiter?.email || job.hrDetails?.email;
+    if (recruiterEmail) {
+      sendJobApplicationReceivedOrgEmail({
+        to: recruiterEmail,
+        companyName: job.company,
+        jobTitle: job.title,
+        applicantName: req.user.name,
+        applicantEmail: req.user.email,
+        applicantHeadline: req.user.headline,
+        applicantPhone: req.user.phone,
+        coverLetter,
+        resumePath: application.resume,
+        resumeFileName: application.resumeFileName,
+      }).catch((err) => console.warn("[Application] Recruiter notification email error:", err.message));
+    }
 
     res.status(201).json({
       success: true,
@@ -279,6 +319,35 @@ const updateApplicationStatus = async (req, res, next) => {
       text: `Your application for "${jobTitle}" was updated to "${status}" by ${orgName}.`,
       link: "/dashboard",
     });
+
+    // Asynchronously send status update email to applicant
+    let applicantUserForEmail = null;
+    try {
+      applicantUserForEmail = await User.findById(application.applicant).select("name email");
+      if (applicantUserForEmail && applicantUserForEmail.email) {
+        sendJobApplicationStatusUpdateEmail({
+          to: applicantUserForEmail.email,
+          applicantName: applicantUserForEmail.name,
+          jobTitle,
+          companyName: orgName,
+          newStatus: status,
+        }).catch((err) => console.warn("[Application] Status update email error:", err.message));
+      }
+    } catch (appErr) {
+      console.warn("[Application] Applicant lookup error for status email:", appErr.message);
+    }
+
+    // If accepted/hired, also send confirmation email to organization
+    if (status === "Accepted" && req.user.email) {
+      sendCandidateHiredOrgEmail({
+        to: req.user.email,
+        companyName: orgName,
+        candidateName: applicantUserForEmail?.name || "Candidate",
+        candidateEmail: applicantUserForEmail?.email || "",
+        jobTitle,
+        salary: application.job?.salary || "Competitive",
+      }).catch((err) => console.warn("[Application] Hired confirmation email error:", err.message));
+    }
 
     res.status(200).json({
       success: true,

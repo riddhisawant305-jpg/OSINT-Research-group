@@ -1,6 +1,12 @@
 const Post = require("../models/Post");
+const User = require("../models/User");
+const Connection = require("../models/Connection");
 const mongoose = require("mongoose");
 const { createNotification } = require("./notificationController");
+const {
+  sendPostInteractionEmail,
+  sendConnectionPostEmail,
+} = require("../services/emailService");
 
 // @desc    Get all posts (feed)
 // @route   GET /api/posts
@@ -140,6 +146,37 @@ const createPost = async (req, res, next) => {
 
     await post.populate("author", "name headline avatarColor profilePhoto isVerified");
 
+    // Asynchronously notify author's connections via email
+    try {
+      const connections = await Connection.find({
+        $or: [{ requester: req.user._id }, { recipient: req.user._id }],
+        status: "accepted",
+      });
+
+      const connectionUserIds = connections.map((c) =>
+        c.requester.toString() === req.user._id.toString() ? c.recipient : c.requester
+      );
+
+      if (connectionUserIds.length > 0) {
+        const connectedUsers = await User.find({
+          _id: { $in: connectionUserIds },
+        }).select("name email");
+
+        const postSnippet = trimmedContent.length > 120 ? trimmedContent.slice(0, 120) + "..." : trimmedContent;
+
+        connectedUsers.forEach((u) => {
+          sendConnectionPostEmail({
+            to: u.email,
+            recipientName: u.name,
+            actorName: req.user.name,
+            postSnippet,
+          }).catch((err) => console.warn("[Post] Failed to send connection post email:", err.message));
+        });
+      }
+    } catch (connErr) {
+      console.warn("[Post] Connection notification error:", connErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: "Post created successfully",
@@ -250,6 +287,19 @@ const toggleLike = async (req, res, next) => {
           text: `${req.user.name} liked your post.`,
           link: `/profile/${post.author}`,
         });
+
+        // Asynchronously notify post author via email
+        User.findById(post.author).select("name email").then((authorUser) => {
+          if (authorUser && authorUser.email) {
+            sendPostInteractionEmail({
+              to: authorUser.email,
+              recipientName: authorUser.name,
+              actorName: req.user.name,
+              type: "like",
+              postSnippet: post.content ? (post.content.slice(0, 100) + (post.content.length > 100 ? "..." : "")) : "",
+            }).catch((err) => console.warn("[Post] Like email dispatch error:", err.message));
+          }
+        }).catch((err) => console.warn("[Post] Author lookup error for like email:", err.message));
       }
     }
 
@@ -303,6 +353,20 @@ const addComment = async (req, res, next) => {
         text: `${req.user.name} commented: "${text.trim().slice(0, 40)}"`,
         link: `/profile/${post.author}`,
       });
+
+      // Asynchronously notify post author via email
+      User.findById(post.author).select("name email").then((authorUser) => {
+        if (authorUser && authorUser.email) {
+          sendPostInteractionEmail({
+            to: authorUser.email,
+            recipientName: authorUser.name,
+            actorName: req.user.name,
+            type: "comment",
+            postSnippet: post.content ? (post.content.slice(0, 100) + (post.content.length > 100 ? "..." : "")) : "",
+            commentText: text.trim(),
+          }).catch((err) => console.warn("[Post] Comment email dispatch error:", err.message));
+        }
+      }).catch((err) => console.warn("[Post] Author lookup error for comment email:", err.message));
     }
 
     res.status(201).json({

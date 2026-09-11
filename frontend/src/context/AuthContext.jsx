@@ -99,6 +99,36 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const googleLogin = async (credential, role = "student") => {
+    const res = await API.post("/auth/google", { credential, role });
+    if (res.data && res.data.token) {
+      setToken(res.data.token);
+      setUser(res.data.data);
+      localStorage.setItem("cv_token", res.data.token);
+      localStorage.setItem("cv_user", JSON.stringify(res.data.data));
+      return res.data;
+    }
+    throw new Error(res.data.message || "Google authentication failed");
+  };
+
+  const forgotPassword = async (email) => {
+    const res = await API.post("/auth/forgot-password", { email });
+    return res.data;
+  };
+
+  const resetPassword = async (resetToken, password) => {
+    const res = await API.put(`/auth/reset-password/${resetToken}`, { password });
+    if (res.data && res.data.token) {
+      setToken(res.data.token);
+      if (res.data.data) {
+        setUser(res.data.data);
+        localStorage.setItem("cv_token", res.data.token);
+        localStorage.setItem("cv_user", JSON.stringify(res.data.data));
+      }
+    }
+    return res.data;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -108,6 +138,9 @@ export function AuthProvider({ children }) {
         isAuthenticated: !!token,
         login,
         signup,
+        googleLogin,
+        forgotPassword,
+        resetPassword,
         logout,
         updateUser,
         refreshUser,

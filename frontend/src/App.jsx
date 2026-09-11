@@ -6,6 +6,8 @@ import AppLayout from "./component/AppLayout";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
@@ -36,6 +38,8 @@ function App() {
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/admin" element={<AdminDashboard />} />
 
           <Route element={<AppLayout />}>

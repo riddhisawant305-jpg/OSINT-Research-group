@@ -1,6 +1,12 @@
 const Job = require("../models/Job");
 const SavedJob = require("../models/SavedJob");
+const User = require("../models/User");
+const Connection = require("../models/Connection");
 const mongoose = require("mongoose");
+const {
+  sendJobListedOrgEmail,
+  sendConnectionNewJobEmail,
+} = require("../services/emailService");
 
 // Helper to find job by either ObjectId or numericId
 const findJobByAnyId = async (idParam) => {
@@ -216,6 +222,52 @@ const createJob = async (req, res, next) => {
       logoColor: logoColor || req.user.avatarColor || "#2563eb",
       recruiter: req.user._id,
     });
+
+    // 1. Asynchronously send confirmation email to the organization
+    if (req.user.email) {
+      sendJobListedOrgEmail({
+        to: req.user.email,
+        companyName: job.company,
+        jobTitle: job.title,
+        location: job.location,
+        salary: job.salary,
+        type: job.type,
+        description: job.description,
+      }).catch((err) => console.warn("[Job] Error sending job listed email to org:", err.message));
+    }
+
+    // 2. Asynchronously notify author's candidate connections via email
+    try {
+      const connections = await Connection.find({
+        $or: [{ requester: req.user._id }, { recipient: req.user._id }],
+        status: "accepted",
+      });
+
+      const connectionUserIds = connections.map((c) =>
+        c.requester.toString() === req.user._id.toString() ? c.recipient : c.requester
+      );
+
+      if (connectionUserIds.length > 0) {
+        const connectedUsers = await User.find({
+          _id: { $in: connectionUserIds },
+        }).select("name email");
+
+        connectedUsers.forEach((u) => {
+          sendConnectionNewJobEmail({
+            to: u.email,
+            recipientName: u.name,
+            companyName: job.company,
+            jobTitle: job.title,
+            location: job.location,
+            salary: job.salary,
+            type: job.type,
+            jobDescription: job.description,
+          }).catch((err) => console.warn("[Job] Error sending new job alert email:", err.message));
+        });
+      }
+    } catch (connErr) {
+      console.warn("[Job] Connection job alert error:", connErr.message);
+    }
 
     res.status(201).json({
       success: true,

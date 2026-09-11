@@ -729,6 +729,35 @@
   background: #fee2e2;
 }
 
+.email-item-btn {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #16a34a;
+}
+
+.email-item-btn:hover {
+  background: #dcfce7;
+}
+
+.admin-email-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.admin-email-btn:hover {
+  background: #dcfce7;
+}
+
 .admin-danger-btn {
   display: inline-flex;
   align-items: center;

@@ -2,6 +2,7 @@ const Connection = require("../models/Connection");
 const User = require("../models/User");
 const mongoose = require("mongoose");
 const { createNotification } = require("./notificationController");
+const { sendConnectionEmail } = require("../services/emailService");
 
 // @desc    Get all connections for current user (including network members)
 // @route   GET /api/connections
@@ -142,6 +143,15 @@ const sendConnectionRequest = async (req, res, next) => {
           link: `/profile/${req.user._id}`,
         });
 
+        // Asynchronously dispatch connection email to requester
+        if (targetUser && targetUser.email) {
+          sendConnectionEmail({
+            to: targetUser.email,
+            recipientName: targetUser.name,
+            actorName: req.user.name,
+          }).catch((err) => console.warn("[Connection] Email error:", err.message));
+        }
+
         return res.status(200).json({
           success: true,
           connected: true,
@@ -172,6 +182,15 @@ const sendConnectionRequest = async (req, res, next) => {
       text: `${req.user.name} connected with you on CareerVerse.`,
       link: `/profile/${req.user._id}`,
     });
+
+    // Asynchronously dispatch connection email to recipient
+    if (targetUser && targetUser.email) {
+      sendConnectionEmail({
+        to: targetUser.email,
+        recipientName: targetUser.name,
+        actorName: req.user.name,
+      }).catch((err) => console.warn("[Connection] Email error:", err.message));
+    }
 
     res.status(201).json({
       success: true,
@@ -207,6 +226,16 @@ const acceptConnection = async (req, res, next) => {
 
     connection.status = "accepted";
     await connection.save();
+    await connection.populate("requester", "name email");
+
+    // Asynchronously dispatch connection email to requester
+    if (connection.requester && connection.requester.email) {
+      sendConnectionEmail({
+        to: connection.requester.email,
+        recipientName: connection.requester.name,
+        actorName: req.user.name,
+      }).catch((err) => console.warn("[Connection] Accept email error:", err.message));
+    }
 
     res.status(200).json({
       success: true,

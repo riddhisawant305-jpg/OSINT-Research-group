@@ -4,6 +4,14 @@ const Job = require("../models/Job");
 const Application = require("../models/Application");
 const Notification = require("../models/Notification");
 const { generateToken } = require("../utils/jwt");
+const {
+  sendUserDeletedByAdminEmail,
+  sendPostDeletedByAdminEmail,
+  sendOrgDeletedByAdminEmail,
+  sendJobDeletedByAdminEmail,
+  sendCustomAdminEmail,
+  sendVerificationBadgeEmail,
+} = require("../services/emailService");
 
 // Auto-seed or guarantee default admin exists
 const ensureDefaultAdmin = async () => {
@@ -198,6 +206,16 @@ const deleteUser = async (req, res, next) => {
     }
 
     const userId = user._id;
+    const reason = req.body?.reason || req.query?.reason || "Administrative decision and account termination";
+
+    // Asynchronously dispatch account deletion email with reason to user
+    if (user.email) {
+      sendUserDeletedByAdminEmail({
+        to: user.email,
+        recipientName: user.name,
+        reason,
+      }).catch((err) => console.warn("[Admin] User deletion email error:", err.message));
+    }
 
     // Delete user's posts, applications, notifications
     await Promise.all([
@@ -240,9 +258,21 @@ const getUserPosts = async (req, res, next) => {
 // @access  Private (Admin)
 const deletePost = async (req, res, next) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.id).populate("author", "name email");
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found" });
+    }
+
+    const reason = req.body?.reason || req.query?.reason || "Violation of CareerVerse community posting standards";
+
+    // Asynchronously dispatch post deletion email with reason to author
+    if (post.author && post.author.email) {
+      sendPostDeletedByAdminEmail({
+        to: post.author.email,
+        recipientName: post.author.name,
+        reason,
+        postSnippet: post.content ? (post.content.slice(0, 120) + (post.content.length > 120 ? "..." : "")) : "",
+      }).catch((err) => console.warn("[Admin] Post deletion email error:", err.message));
     }
 
     await post.deleteOne();
@@ -307,6 +337,16 @@ const deleteOrganization = async (req, res, next) => {
     }
 
     const orgId = org._id;
+    const reason = req.body?.reason || req.query?.reason || "Organization account termination and policy review";
+
+    // Asynchronously dispatch account deletion email with reason to organization
+    if (org.email) {
+      sendOrgDeletedByAdminEmail({
+        to: org.email,
+        companyName: org.companyName || org.name || "Organization",
+        reason,
+      }).catch((err) => console.warn("[Admin] Organization deletion email error:", err.message));
+    }
 
     // Find all jobs by this organization
     const jobs = await Job.find({ recruiter: orgId });
@@ -352,13 +392,26 @@ const getOrganizationJobs = async (req, res, next) => {
 // @access  Private (Admin)
 const deleteJob = async (req, res, next) => {
   try {
-    let job = await Job.findById(req.params.id);
+    let job = await Job.findById(req.params.id).populate("recruiter", "name email companyName");
     if (!job && !isNaN(req.params.id)) {
-      job = await Job.findOne({ numericId: Number(req.params.id) });
+      job = await Job.findOne({ numericId: Number(req.params.id) }).populate("recruiter", "name email companyName");
     }
 
     if (!job) {
       return res.status(404).json({ success: false, message: "Job not found" });
+    }
+
+    const reason = req.body?.reason || req.query?.reason || "Job opening removed by administrator moderation";
+
+    // Asynchronously dispatch job deletion email with reason to organization/recruiter
+    const recruiterEmail = job.recruiter?.email || job.hrDetails?.email;
+    if (recruiterEmail) {
+      sendJobDeletedByAdminEmail({
+        to: recruiterEmail,
+        companyName: job.company || job.recruiter?.companyName || "Organization",
+        jobTitle: job.title,
+        reason,
+      }).catch((err) => console.warn("[Admin] Job deletion email error:", err.message));
     }
 
     await Promise.all([
@@ -475,6 +528,15 @@ const toggleVerifyUser = async (req, res, next) => {
           : "Your CareerVerse Verified badge status has been revoked or updated by administrators.",
         link: "/profile",
       });
+
+      // Asynchronously send verification badge email
+      if (user.email) {
+        sendVerificationBadgeEmail({
+          to: user.email,
+          recipientName: user.companyName || user.name,
+          isVerified: newStatus,
+        }).catch((err) => console.warn("[Admin] Verification email error:", err.message));
+      }
     } catch (notifErr) {
       console.warn("Could not send verification notification:", notifErr.message);
     }
@@ -497,6 +559,42 @@ const toggleVerifyUser = async (req, res, next) => {
   }
 };
 
+// @desc    Send custom email to user or organization
+// @route   POST /api/admin/send-email
+// @access  Private (Admin)
+const sendCustomEmail = async (req, res, next) => {
+  try {
+    const { to, recipientName, subject, message } = req.body;
+    if (!to || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Recipient email and message text are required",
+      });
+    }
+
+    const mailResult = await sendCustomAdminEmail({
+      to: to.trim(),
+      recipientName: recipientName || "Member",
+      subject: subject ? subject.trim() : "Official Message from CareerVerse Administration",
+      message: message.trim(),
+    });
+
+    if (mailResult && mailResult.error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to dispatch email: " + mailResult.error,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Custom email successfully sent to ${to}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   loginAdmin,
   getAdminStats,
@@ -513,4 +611,5 @@ module.exports = {
   broadcastNotification,
   ensureDefaultAdmin,
   toggleVerifyUser,
+  sendCustomEmail,
 };

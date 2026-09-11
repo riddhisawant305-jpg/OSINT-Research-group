@@ -1,11 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./Signup.css";
 
+const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  "927361270744-t93si7t5g6ssuk134913hta9i8gvahgf.apps.googleusercontent.com";
+
 function Signup() {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, googleLogin } = useAuth();
   const [accountType, setAccountType] = useState("candidate"); // 'candidate' | 'organization'
   const [form, setForm] = useState({
     name: "",
@@ -21,9 +25,71 @@ function Signup() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
 
   const update = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleGoogleSignupResponse = async (response) => {
+    if (!response?.credential) return;
+    setError("");
+    setLoading(true);
+    try {
+      const selectedRole = accountType === "organization" ? "organization" : "student";
+      const res = await googleLogin(response.credential, selectedRole);
+      if (res.data?.role === "organization" || res.data?.role === "recruiter") {
+        navigate("/dashboard");
+      } else {
+        navigate("/home");
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.message || err.message || "Google Sign-Up failed"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let intervalId = null;
+
+    const renderGoogleBtn = () => {
+      if (window.google?.accounts?.id) {
+        setGoogleLoaded(true);
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleSignupResponse,
+        });
+
+        const btnEl = document.getElementById("googleSignUpDiv");
+        if (btnEl) {
+          btnEl.innerHTML = "";
+          window.google.accounts.id.renderButton(btnEl, {
+            theme: "outline",
+            size: "large",
+            width: 320,
+            text: "signup_with",
+            shape: "rectangular",
+          });
+        }
+        return true;
+      }
+      return false;
+    };
+
+    if (!renderGoogleBtn()) {
+      intervalId = setInterval(() => {
+        if (renderGoogleBtn() && intervalId) {
+          clearInterval(intervalId);
+        }
+      }, 200);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [accountType]);
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -265,9 +331,32 @@ function Signup() {
           <span>or</span>
         </div>
 
-        <button type="button" className="signup-google">
-          <span>G</span> Continue with Google
-        </button>
+        <div
+          id="googleSignUpDiv"
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            minHeight: "44px",
+            marginBottom: "6px",
+          }}
+        ></div>
+
+        {!googleLoaded && (
+          <button
+            type="button"
+            className="signup-google"
+            onClick={() => {
+              if (window.google?.accounts?.id) {
+                window.google.accounts.id.prompt();
+              } else {
+                setError("Google Services loading. Please try again in a moment.");
+              }
+            }}
+          >
+            <span>G</span> Continue with Google
+          </button>
+        )}
 
         <p className="signup-login">
           Already have an account?{" "}

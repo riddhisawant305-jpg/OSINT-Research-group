@@ -15,6 +15,7 @@ const {
   getAllJobs,
   broadcastNotification,
   toggleVerifyUser,
+  sendCustomEmail,
 } = require("../controllers/adminController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
@@ -46,7 +47,8 @@ router.delete("/posts/:id", deletePost);
 router.get("/jobs", getAllJobs);
 router.delete("/jobs/:id", deleteJob);
 
-// System broadcasts
+// System broadcasts & Custom emails
 router.post("/broadcast", broadcastNotification);
+router.post("/send-email", sendCustomEmail);
 
 module.exports = router;

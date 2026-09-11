@@ -22,6 +22,7 @@ import {
   X,
   Clock,
   Radio,
+  Mail,
 } from "lucide-react";
 import API from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -204,6 +205,23 @@ function AdminDashboard() {
   const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
   const [broadcastForm, setBroadcastForm] = useState({ title: "", text: "" });
   const [broadcasting, setBroadcasting] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    type: "", // "user" | "post" | "org" | "job"
+    item: null,
+    title: "",
+    recipientInfo: "",
+    reason: "",
+    loading: false,
+  });
+  const [customEmailModal, setCustomEmailModal] = useState({
+    open: false,
+    to: "",
+    recipientName: "",
+    subject: "",
+    message: "",
+    loading: false,
+  });
 
   // Configure axios auth header helper for admin calls
   const getAdminHeaders = (tokenOverride) => {
@@ -324,23 +342,134 @@ function AdminDashboard() {
   }, [isAdminLoggedIn]);
 
   // -----------------------------------------------------------
-  // ACTIONS: CANDIDATE USERS
+  // ACTIONS: MODERATION & DELETIONS WITH REASON
   // -----------------------------------------------------------
-  const handleDeleteUser = async (user) => {
-    if (!window.confirm(`Are you sure you want to permanently delete candidate "${user.name}" (${user.email})? All their posts and applications will also be deleted.`)) {
+  const handlePromptDeleteUser = (user) => {
+    setDeleteModal({
+      open: true,
+      type: "user",
+      item: user,
+      title: `Delete Candidate: ${user.name}`,
+      recipientInfo: `An official notification with the deletion reason will be emailed to ${user.email}.`,
+      reason: "",
+      loading: false,
+    });
+  };
+
+  const handlePromptDeleteOrg = (org) => {
+    const orgName = org.companyName || org.name || "Organization";
+    setDeleteModal({
+      open: true,
+      type: "org",
+      item: org,
+      title: `Delete Organization: ${orgName}`,
+      recipientInfo: `An official notification with the deletion reason will be emailed to ${org.email}.`,
+      reason: "",
+      loading: false,
+    });
+  };
+
+  const handlePromptDeletePost = (postOrId) => {
+    let post = postOrId;
+    if (typeof postOrId === "string") {
+      post = postsList.find((p) => p._id === postOrId) || userPostsModal.posts.find((p) => p._id === postOrId) || { _id: postOrId };
+    }
+    const authorName = post.author?.name || "Candidate";
+    const authorEmail = post.author?.email || "author's registered email";
+    setDeleteModal({
+      open: true,
+      type: "post",
+      item: post,
+      title: `Delete Community Post`,
+      recipientInfo: `Author: ${authorName}. An email explaining this deletion will be sent to ${authorEmail}.`,
+      reason: "",
+      loading: false,
+    });
+  };
+
+  const handlePromptDeleteJob = (jobOrId) => {
+    let job = jobOrId;
+    if (typeof jobOrId === "string") {
+      job = jobsList.find((j) => (j._id || j.numericId) === jobOrId) || orgJobsModal.jobs.find((j) => (j._id || j.numericId) === jobOrId) || { _id: jobOrId };
+    }
+    const company = job.company || job.recruiter?.name || "Hiring Organization";
+    const contactEmail = job.recruiter?.email || "the organization's registered email";
+    setDeleteModal({
+      open: true,
+      type: "job",
+      item: job,
+      title: `Delete Job Opening: ${job.title || "Job"}`,
+      recipientInfo: `Organization: ${company}. An email explaining this deletion will be dispatched to ${contactEmail}.`,
+      reason: "",
+      loading: false,
+    });
+  };
+
+  const handleConfirmDeleteWithReason = async (e) => {
+    if (e) e.preventDefault();
+    if (!deleteModal.reason.trim()) {
+      alert("Please enter a specific reason for this deletion. It will be emailed to the affected party.");
       return;
     }
 
+    setDeleteModal((prev) => ({ ...prev, loading: true }));
+    const reasonText = deleteModal.reason.trim();
+
     try {
-      await API.delete(`/admin/users/${user._id}`, getAdminHeaders());
-      setUsersList((prev) => prev.filter((u) => u._id !== user._id));
-      setStats((prev) => ({
-        ...prev,
-        totalUsers: Math.max(0, prev.totalUsers - 1),
-      }));
-      alert(`User "${user.name}" has been deleted.`);
+      if (deleteModal.type === "user") {
+        const userId = deleteModal.item._id || deleteModal.item.id;
+        await API.delete(`/admin/users/${userId}`, {
+          ...getAdminHeaders(),
+          data: { reason: reasonText },
+          params: { reason: reasonText },
+        });
+        setUsersList((prev) => prev.filter((u) => (u._id || u.id) !== userId));
+        setStats((prev) => ({ ...prev, totalUsers: Math.max(0, prev.totalUsers - 1) }));
+        alert(`Candidate user deleted and reason email dispatched.`);
+      } else if (deleteModal.type === "org") {
+        const orgId = deleteModal.item._id || deleteModal.item.id;
+        await API.delete(`/admin/organizations/${orgId}`, {
+          ...getAdminHeaders(),
+          data: { reason: reasonText },
+          params: { reason: reasonText },
+        });
+        setOrgsList((prev) => prev.filter((o) => (o._id || o.id) !== orgId));
+        setStats((prev) => ({ ...prev, totalOrganizations: Math.max(0, prev.totalOrganizations - 1) }));
+        alert(`Organization deleted and reason email dispatched.`);
+      } else if (deleteModal.type === "post") {
+        const postId = deleteModal.item._id || deleteModal.item.id || deleteModal.item;
+        await API.delete(`/admin/posts/${postId}`, {
+          ...getAdminHeaders(),
+          data: { reason: reasonText },
+          params: { reason: reasonText },
+        });
+        setUserPostsModal((prev) => ({
+          ...prev,
+          posts: prev.posts.filter((p) => p._id !== postId),
+        }));
+        setPostsList((prev) => prev.filter((p) => p._id !== postId));
+        setStats((prev) => ({ ...prev, totalPosts: Math.max(0, prev.totalPosts - 1) }));
+        alert(`Post deleted and reason email dispatched to author.`);
+      } else if (deleteModal.type === "job") {
+        const jobId = deleteModal.item._id || deleteModal.item.numericId || deleteModal.item.id || deleteModal.item;
+        await API.delete(`/admin/jobs/${jobId}`, {
+          ...getAdminHeaders(),
+          data: { reason: reasonText },
+          params: { reason: reasonText },
+        });
+        setOrgJobsModal((prev) => ({
+          ...prev,
+          jobs: prev.jobs.filter((j) => (j._id || j.numericId || j.id) !== jobId),
+        }));
+        setJobsList((prev) => prev.filter((j) => (j._id || j.numericId || j.id) !== jobId));
+        setStats((prev) => ({ ...prev, totalJobs: Math.max(0, prev.totalJobs - 1) }));
+        alert(`Job listing deleted and reason email dispatched to organization.`);
+      }
+
+      setDeleteModal({ open: false, type: "", item: null, title: "", recipientInfo: "", reason: "", loading: false });
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete user.");
+      alert(err.response?.data?.message || "Failed to process deletion.");
+      setDeleteModal((prev) => ({ ...prev, loading: false }));
     }
   };
 
@@ -355,47 +484,6 @@ function AdminDashboard() {
     }
   };
 
-  const handleAdminDeletePost = async (postId) => {
-    if (!window.confirm("Are you sure you want to delete this post?")) return;
-
-    try {
-      await API.delete(`/admin/posts/${postId}`, getAdminHeaders());
-      // Remove from modal
-      setUserPostsModal((prev) => ({
-        ...prev,
-        posts: prev.posts.filter((p) => p._id !== postId),
-      }));
-      // Remove from general list
-      setPostsList((prev) => prev.filter((p) => p._id !== postId));
-      setStats((prev) => ({ ...prev, totalPosts: Math.max(0, prev.totalPosts - 1) }));
-      alert("Post deleted successfully.");
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete post.");
-    }
-  };
-
-  // -----------------------------------------------------------
-  // ACTIONS: ORGANIZATIONS
-  // -----------------------------------------------------------
-  const handleDeleteOrg = async (org) => {
-    const orgName = org.companyName || org.name || "Organization";
-    if (!window.confirm(`Are you sure you want to permanently delete organization "${orgName}"? All their posted jobs and received applications will be deleted.`)) {
-      return;
-    }
-
-    try {
-      await API.delete(`/admin/organizations/${org._id}`, getAdminHeaders());
-      setOrgsList((prev) => prev.filter((o) => o._id !== org._id));
-      setStats((prev) => ({
-        ...prev,
-        totalOrganizations: Math.max(0, prev.totalOrganizations - 1),
-      }));
-      alert(`Organization "${orgName}" has been deleted.`);
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete organization.");
-    }
-  };
-
   const handleOpenOrgJobs = async (org) => {
     setOrgJobsModal({ open: true, org, jobs: [], loading: true });
     try {
@@ -407,20 +495,44 @@ function AdminDashboard() {
     }
   };
 
-  const handleAdminDeleteJob = async (jobId) => {
-    if (!window.confirm("Are you sure you want to delete this job opening?")) return;
+  // -----------------------------------------------------------
+  // ACTIONS: CUSTOM DIRECT EMAIL
+  // -----------------------------------------------------------
+  const handleOpenCustomEmail = (recipient = null) => {
+    setCustomEmailModal({
+      open: true,
+      to: recipient?.email || "",
+      recipientName: recipient?.companyName || recipient?.name || "",
+      subject: "",
+      message: "",
+      loading: false,
+    });
+  };
 
+  const handleSendCustomEmail = async (e) => {
+    e.preventDefault();
+    if (!customEmailModal.to.trim() || !customEmailModal.subject.trim() || !customEmailModal.message.trim()) {
+      alert("Please fill in recipient email, subject, and message content.");
+      return;
+    }
+
+    setCustomEmailModal((prev) => ({ ...prev, loading: true }));
     try {
-      await API.delete(`/admin/jobs/${jobId}`, getAdminHeaders());
-      setOrgJobsModal((prev) => ({
-        ...prev,
-        jobs: prev.jobs.filter((j) => (j._id || j.numericId) !== jobId),
-      }));
-      setJobsList((prev) => prev.filter((j) => (j._id || j.numericId) !== jobId));
-      setStats((prev) => ({ ...prev, totalJobs: Math.max(0, prev.totalJobs - 1) }));
-      alert("Job opening deleted successfully.");
+      const res = await API.post(
+        "/admin/send-email",
+        {
+          to: customEmailModal.to.trim(),
+          recipientName: customEmailModal.recipientName.trim(),
+          subject: customEmailModal.subject.trim(),
+          message: customEmailModal.message.trim(),
+        },
+        getAdminHeaders()
+      );
+      alert(res.data?.message || "Email dispatched successfully!");
+      setCustomEmailModal({ open: false, to: "", recipientName: "", subject: "", message: "", loading: false });
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete job.");
+      alert(err.response?.data?.message || "Failed to send email.");
+      setCustomEmailModal((prev) => ({ ...prev, loading: false }));
     }
   };
 
@@ -636,6 +748,13 @@ function AdminDashboard() {
         <div className="admin-sidebar-footer">
           <button
             className="admin-broadcast-btn"
+            style={{ marginBottom: 8, background: "#0284c7" }}
+            onClick={() => handleOpenCustomEmail()}
+          >
+            <Mail size={16} /> Compose Email
+          </button>
+          <button
+            className="admin-broadcast-btn"
             onClick={() => setBroadcastModalOpen(true)}
           >
             <Bell size={16} /> Broadcast Notification
@@ -819,8 +938,16 @@ function AdminDashboard() {
                             </td>
                             <td>
                               <button
+                                className="admin-email-btn"
+                                style={{ marginRight: 6 }}
+                                onClick={() => handleOpenCustomEmail(u)}
+                                title="Send email to candidate"
+                              >
+                                <Mail size={13} />
+                              </button>
+                              <button
                                 className="admin-danger-btn"
-                                onClick={() => handleDeleteUser(u)}
+                                onClick={() => handlePromptDeleteUser(u)}
                                 title="Delete user"
                               >
                                 <Trash2 size={13} />
@@ -883,8 +1010,16 @@ function AdminDashboard() {
                             </td>
                             <td>
                               <button
+                                className="admin-email-btn"
+                                style={{ marginRight: 6 }}
+                                onClick={() => handleOpenCustomEmail(o)}
+                                title="Send email to organization"
+                              >
+                                <Mail size={13} />
+                              </button>
+                              <button
                                 className="admin-danger-btn"
-                                onClick={() => handleDeleteOrg(o)}
+                                onClick={() => handlePromptDeleteOrg(o)}
                                 title="Delete organization"
                               >
                                 <Trash2 size={13} />
@@ -1016,6 +1151,13 @@ function AdminDashboard() {
                                 <span>{u.isVerified ? "Verified ★" : "Verify"}</span>
                               </button>
                               <button
+                                className="admin-action-btn email-item-btn"
+                                onClick={() => handleOpenCustomEmail(u)}
+                                title="Send direct email to candidate"
+                              >
+                                <Mail size={14} /> Send Email
+                              </button>
+                              <button
                                 className="admin-action-btn view-posts-btn"
                                 onClick={() => handleOpenUserPosts(u)}
                                 title="View candidate's community posts"
@@ -1024,7 +1166,7 @@ function AdminDashboard() {
                               </button>
                               <button
                                 className="admin-action-btn delete-item-btn"
-                                onClick={() => handleDeleteUser(u)}
+                                onClick={() => handlePromptDeleteUser(u)}
                                 title="Delete user"
                               >
                                 <Trash2 size={14} /> Delete User
@@ -1146,6 +1288,13 @@ function AdminDashboard() {
                                 <span>{o.isVerified ? "Verified ★" : "Verify"}</span>
                               </button>
                               <button
+                                className="admin-action-btn email-item-btn"
+                                onClick={() => handleOpenCustomEmail(o)}
+                                title="Send direct email to organization"
+                              >
+                                <Mail size={14} /> Send Email
+                              </button>
+                              <button
                                 className="admin-action-btn view-posts-btn"
                                 onClick={() => handleOpenOrgJobs(o)}
                                 title="View jobs posted by this organization"
@@ -1154,7 +1303,7 @@ function AdminDashboard() {
                               </button>
                               <button
                                 className="admin-action-btn delete-item-btn"
-                                onClick={() => handleDeleteOrg(o)}
+                                onClick={() => handlePromptDeleteOrg(o)}
                                 title="Delete organization"
                               >
                                 <Trash2 size={14} /> Delete Org
@@ -1193,7 +1342,7 @@ function AdminDashboard() {
                         </div>
                         <button
                           className="admin-danger-btn"
-                          onClick={() => handleAdminDeletePost(post._id)}
+                          onClick={() => handlePromptDeletePost(post)}
                           title="Delete post"
                         >
                           <Trash2 size={14} /> Delete Post
@@ -1280,7 +1429,7 @@ function AdminDashboard() {
                               </a>
                               <button
                                 className="admin-action-btn delete-item-btn"
-                                onClick={() => handleAdminDeleteJob(job._id || job.numericId)}
+                                onClick={() => handlePromptDeleteJob(job)}
                                 title="Delete job posting"
                               >
                                 <Trash2 size={14} /> Delete
@@ -1337,7 +1486,7 @@ function AdminDashboard() {
                         <small>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "Recent"}</small>
                         <button
                           className="admin-danger-btn"
-                          onClick={() => handleAdminDeletePost(post._id)}
+                          onClick={() => handlePromptDeletePost(post)}
                           title="Delete this post"
                         >
                           <Trash2 size={14} /> Delete Post
@@ -1422,7 +1571,7 @@ function AdminDashboard() {
                         </a>
                         <button
                           className="admin-danger-btn"
-                          onClick={() => handleAdminDeleteJob(job._id || job.numericId)}
+                          onClick={() => handlePromptDeleteJob(job)}
                           title="Delete this job"
                         >
                           <Trash2 size={14} /> Delete Job
@@ -1489,6 +1638,179 @@ function AdminDashboard() {
                   disabled={broadcasting}
                 >
                   {broadcasting ? "Sending Broadcast..." : "Send Announcement"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------- */}
+      {/* MODAL: MANDATORY REASON FOR DELETION                        */}
+      {/* ----------------------------------------------------------- */}
+      {deleteModal.open && (
+        <div
+          className="admin-modal-overlay"
+          onClick={() =>
+            !deleteModal.loading &&
+            setDeleteModal({ open: false, type: "", item: null, title: "", recipientInfo: "", reason: "", loading: false })
+          }
+        >
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <div>
+                <h3 style={{ display: "flex", alignItems: "center", gap: 8, color: "#dc2626" }}>
+                  <AlertTriangle size={20} />
+                  {deleteModal.title || "Confirm Deletion"}
+                </h3>
+                <p>{deleteModal.recipientInfo}</p>
+              </div>
+              <button
+                className="admin-modal-close"
+                disabled={deleteModal.loading}
+                onClick={() =>
+                  setDeleteModal({ open: false, type: "", item: null, title: "", recipientInfo: "", reason: "", loading: false })
+                }
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmDeleteWithReason} className="admin-modal-form">
+              <div className="admin-form-group">
+                <label style={{ fontWeight: 600, color: "#1e293b" }}>
+                  Reason for Deletion *{" "}
+                  <span style={{ fontSize: 12, fontWeight: 400, color: "#64748b" }}>
+                    (This message will be emailed directly to the account owner)
+                  </span>
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="Explain clearly why this item is being deleted (e.g. Terms of Service violation, fraudulent job listing, inappropriate content)..."
+                  value={deleteModal.reason}
+                  onChange={(e) => setDeleteModal({ ...deleteModal, reason: e.target.value })}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="admin-modal-actions">
+                <button
+                  type="button"
+                  className="btn-outline"
+                  disabled={deleteModal.loading}
+                  onClick={() =>
+                    setDeleteModal({ open: false, type: "", item: null, title: "", recipientInfo: "", reason: "", loading: false })
+                  }
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-primary-btn"
+                  style={{ background: "#dc2626" }}
+                  disabled={deleteModal.loading || !deleteModal.reason.trim()}
+                >
+                  {deleteModal.loading ? "Deleting & Dispatching Email..." : "Confirm Deletion & Send Email"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------- */}
+      {/* MODAL: SEND CUSTOM EMAIL DIRECTLY                           */}
+      {/* ----------------------------------------------------------- */}
+      {customEmailModal.open && (
+        <div
+          className="admin-modal-overlay"
+          onClick={() =>
+            !customEmailModal.loading &&
+            setCustomEmailModal({ open: false, to: "", recipientName: "", subject: "", message: "", loading: false })
+          }
+        >
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <div>
+                <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Mail size={20} color="#2563eb" />
+                  Send Direct Email
+                </h3>
+                <p>Send an official administrative email directly to a user or organization.</p>
+              </div>
+              <button
+                className="admin-modal-close"
+                disabled={customEmailModal.loading}
+                onClick={() =>
+                  setCustomEmailModal({ open: false, to: "", recipientName: "", subject: "", message: "", loading: false })
+                }
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendCustomEmail} className="admin-modal-form">
+              <div className="admin-form-group">
+                <label>Recipient Email *</label>
+                <input
+                  type="email"
+                  placeholder="recipient@example.com"
+                  value={customEmailModal.to}
+                  onChange={(e) => setCustomEmailModal({ ...customEmailModal, to: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label>Recipient Name (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. John Doe / TechNova Solutions"
+                  value={customEmailModal.recipientName}
+                  onChange={(e) => setCustomEmailModal({ ...customEmailModal, recipientName: e.target.value })}
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label>Email Subject *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CareerVerse Platform Update / Important Notice"
+                  value={customEmailModal.subject}
+                  onChange={(e) => setCustomEmailModal({ ...customEmailModal, subject: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label>Email Message Content *</label>
+                <textarea
+                  rows={6}
+                  placeholder="Type your message here. It will be sent formatted in CareerVerse's official semi-formal, modern email template..."
+                  value={customEmailModal.message}
+                  onChange={(e) => setCustomEmailModal({ ...customEmailModal, message: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="admin-modal-actions">
+                <button
+                  type="button"
+                  className="btn-outline"
+                  disabled={customEmailModal.loading}
+                  onClick={() =>
+                    setCustomEmailModal({ open: false, to: "", recipientName: "", subject: "", message: "", loading: false })
+                  }
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-primary-btn"
+                  disabled={customEmailModal.loading || !customEmailModal.to.trim() || !customEmailModal.subject.trim() || !customEmailModal.message.trim()}
+                >
+                  {customEmailModal.loading ? "Sending Email..." : "Send Email"}
                 </button>
               </div>
             </form>

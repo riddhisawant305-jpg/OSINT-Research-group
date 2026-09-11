@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 const educationSchema = new mongoose.Schema(
   {
@@ -217,6 +218,23 @@ const userSchema = new mongoose.Schema(
       founded: { type: String, default: "", trim: true },
       headquarters: { type: String, default: "", trim: true },
     },
+
+    googleId: {
+      type: String,
+      default: "",
+    },
+
+    resetPasswordToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    resetPasswordExpire: {
+      type: Date,
+      default: null,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -246,6 +264,17 @@ userSchema.pre("save", async function () {
 // Method to compare candidate password
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to generate and hash password reset token
+userSchema.methods.getResetPasswordToken = function () {
+  const resetToken = crypto.randomBytes(20).toString("hex");
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+  this.resetPasswordExpire = Date.now() + 60 * 60 * 1000; // 1 hour validity
+  return resetToken;
 };
 
 module.exports = mongoose.model("User", userSchema);
