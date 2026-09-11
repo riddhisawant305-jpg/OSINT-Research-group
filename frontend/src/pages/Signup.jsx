@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./Signup.css";
 
@@ -9,8 +9,19 @@ const GOOGLE_CLIENT_ID =
 
 function Signup() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signup, googleLogin } = useAuth();
-  const [accountType, setAccountType] = useState("candidate"); // 'candidate' | 'organization'
+  const initialRole = searchParams.get("role") === "organization" ? "organization" : "candidate";
+  const [accountType, setAccountType] = useState(initialRole);
+
+  useEffect(() => {
+    const roleParam = searchParams.get("role");
+    if (roleParam === "organization") {
+      setAccountType("organization");
+    } else if (roleParam === "candidate") {
+      setAccountType("candidate");
+    }
+  }, [searchParams]);
   const [form, setForm] = useState({
     name: "",
     headline: "",

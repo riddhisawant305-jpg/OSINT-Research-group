@@ -12,7 +12,6 @@ import {
   LogOut,
   Award,
 } from "lucide-react";
-import { currentUser as fallbackUser } from "../data/dummyData";
 import { useAuth } from "../context/AuthContext";
 import API from "../api/client";
 import Avatar from "./Avatar";
@@ -21,7 +20,7 @@ import "./Navbar.css";
 export function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const activeUser = user || fallbackUser;
+  const activeUser = user;
   const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isClickOpen, setIsClickOpen] = useState(false);
@@ -108,13 +107,17 @@ export function Navbar() {
 
   const isOrg = user?.role === "organization" || user?.role === "recruiter";
 
-  const links = [
+  const links = user ? [
     { to: "/home", label: "Home", Icon: Home },
     ...(!isOrg ? [{ to: "/jobs", label: "Jobs", Icon: Briefcase }] : []),
     { to: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
     ...(isOrg ? [{ to: "/hired", label: "Hired", Icon: Award }] : []),
     { to: "/notifications", label: "Notifications", Icon: Bell, badge: unreadCount },
     { to: "/network", label: "Network", Icon: Users },
+  ] : [
+    { to: "/", label: "Home", Icon: Home },
+    { to: "/about", label: "About Us", Icon: Users },
+    { to: "/contact", label: "Contact & FAQs", Icon: Bell },
   ];
 
   if (user?.role === "admin") {
@@ -124,7 +127,7 @@ export function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <div className="navbar-brand" onClick={() => navigate("/home")}>
+        <div className="navbar-brand" onClick={() => navigate(user ? "/home" : "/")}>
           <div className="navbar-logo">CV</div>
           <span>
             Career<span>Verse</span>
@@ -147,89 +150,108 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div
-          className="navbar-profile-wrapper"
-          ref={dropdownRef}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
+        {user ? (
           <div
-            className="navbar-profile"
-            onClick={handleProfileClick}
-            aria-expanded={dropdownOpen}
+            className="navbar-profile-wrapper"
+            ref={dropdownRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
-            <Avatar user={activeUser} size={38} />
-            <span className="navbar-profile-name">
-              {activeUser.name ? activeUser.name.split(" ")[0] : "Profile"}
-            </span>
-            <ChevronDown size={14} className={"navbar-profile-arrow" + (dropdownOpen ? " open" : "")} />
-          </div>
-
-          {dropdownOpen && (
             <div
-              className="navbar-dropdown-menu"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
+              className="navbar-profile"
+              onClick={handleProfileClick}
+              aria-expanded={dropdownOpen}
             >
-              <div className="navbar-dropdown-header">
-                <Avatar user={activeUser} size={40} />
-                <div className="navbar-dropdown-user-info">
-                  <strong>{activeUser.name || "CareerVerse User"}</strong>
-                  <span>{activeUser.headline || activeUser.email || "Professional"}</span>
+              <Avatar user={activeUser} size={38} />
+              <span className="navbar-profile-name">
+                {activeUser.name ? activeUser.name.split(" ")[0] : "Profile"}
+              </span>
+              <ChevronDown size={14} className={"navbar-profile-arrow" + (dropdownOpen ? " open" : "")} />
+            </div>
+
+            {dropdownOpen && (
+              <div
+                className="navbar-dropdown-menu"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                <div className="navbar-dropdown-header">
+                  <Avatar user={activeUser} size={40} />
+                  <div className="navbar-dropdown-user-info">
+                    <strong>{activeUser.name || "CareerVerse User"}</strong>
+                    <span>{activeUser.headline || activeUser.email || "Professional"}</span>
+                  </div>
                 </div>
-              </div>
-              <div className="navbar-dropdown-divider"></div>
-              <button
-                type="button"
-                className="navbar-dropdown-item"
-                onClick={() => {
-                  handleClose();
-                  navigate("/profile");
-                }}
-              >
-                <User size={16} />
-                <span>View profile</span>
-              </button>
-              <button
-                type="button"
-                className="navbar-dropdown-item"
-                onClick={() => {
-                  handleClose();
-                  navigate("/edit-profile");
-                }}
-              >
-                <Edit3 size={16} />
-                <span>Edit profile</span>
-              </button>
-              {isOrg && (
+                <div className="navbar-dropdown-divider"></div>
                 <button
                   type="button"
                   className="navbar-dropdown-item"
                   onClick={() => {
                     handleClose();
-                    navigate("/hired");
+                    navigate("/profile");
                   }}
                 >
-                  <Award size={16} />
-                  <span>Hired Candidates</span>
+                  <User size={16} />
+                  <span>View profile</span>
                 </button>
-              )}
-              <div className="navbar-dropdown-divider"></div>
-              <button
-                type="button"
-                className="navbar-dropdown-item navbar-dropdown-logout"
-                onClick={() => {
-                  handleClose();
-                  logout();
-                  navigate("/login");
-                }}
-              >
-                <LogOut size={16} />
-                <span>Log out</span>
-              </button>
-            </div>
-          )}
-        </div>
+                <button
+                  type="button"
+                  className="navbar-dropdown-item"
+                  onClick={() => {
+                    handleClose();
+                    navigate("/edit-profile");
+                  }}
+                >
+                  <Edit3 size={16} />
+                  <span>Edit profile</span>
+                </button>
+                {isOrg && (
+                  <button
+                    type="button"
+                    className="navbar-dropdown-item"
+                    onClick={() => {
+                      handleClose();
+                      navigate("/hired");
+                    }}
+                  >
+                    <Award size={16} />
+                    <span>Hired Candidates</span>
+                  </button>
+                )}
+                <div className="navbar-dropdown-divider"></div>
+                <button
+                  type="button"
+                  className="navbar-dropdown-item navbar-dropdown-logout"
+                  onClick={() => {
+                    handleClose();
+                    logout();
+                    navigate("/login");
+                  }}
+                >
+                  <LogOut size={16} />
+                  <span>Log out</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="navbar-guest-actions">
+            <button
+              type="button"
+              className="navbar-btn-login"
+              onClick={() => navigate("/login")}
+            >
+              Log In
+            </button>
+            <button
+              type="button"
+              className="navbar-btn-signup"
+              onClick={() => navigate("/signup")}
+            >
+              Get Started
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

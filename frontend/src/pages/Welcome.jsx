@@ -77,8 +77,18 @@ function Welcome() {
     return () => { mounted = false; };
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      navigate(isOrg ? "/dashboard" : "/home", { replace: true });
+    }
+  }, [user, isOrg, navigate]);
+
   const toggleFaq = (idx) => {
     setOpenFaq(openFaq === idx ? null : idx);
+  };
+
+  const handleFeatureClick = (path) => {
+    navigate("/login", { state: { from: { pathname: path } } });
   };
 
   const scrollToSection = (id) => {
@@ -87,6 +97,10 @@ function Welcome() {
       el.scrollIntoView({ behavior: "smooth" });
     }
   };
+
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="landing-page-root">
@@ -194,26 +208,6 @@ function Welcome() {
                 </button>
               </>
             )}
-          </div>
-
-          {/* Social Proof Stats */}
-          <div className="landing-stats-grid">
-            <div className="stat-card">
-              <strong>10,000+</strong>
-              <span>Students & Candidates</span>
-            </div>
-            <div className="stat-card">
-              <strong>5,000+</strong>
-              <span>Verified Job Listings</span>
-            </div>
-            <div className="stat-card">
-              <strong>1,200+</strong>
-              <span>Active Organizations</span>
-            </div>
-            <div className="stat-card">
-              <strong>100%</strong>
-              <span>Dedicated Online Support</span>
-            </div>
           </div>
 
           {/* Hero Visual Showcase */}
@@ -361,7 +355,14 @@ function Welcome() {
               </p>
               <div className="ai-card-footer">
                 <span>Tailored career roadmaps</span>
-                <Link to="/mentor" className="ai-card-link">Try Mentor ›</Link>
+                <button
+                  type="button"
+                  onClick={() => handleFeatureClick("/mentor")}
+                  className="ai-card-link"
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
+                >
+                  Try Mentor ›
+                </button>
               </div>
             </div>
 
@@ -375,7 +376,14 @@ function Welcome() {
               </p>
               <div className="ai-card-footer">
                 <span>ATS compatibility scoring</span>
-                <Link to="/resume" className="ai-card-link">Analyze Resume ›</Link>
+                <button
+                  type="button"
+                  onClick={() => handleFeatureClick("/resume")}
+                  className="ai-card-link"
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
+                >
+                  Analyze Resume ›
+                </button>
               </div>
             </div>
 
@@ -389,7 +397,14 @@ function Welcome() {
               </p>
               <div className="ai-card-footer">
                 <span>Voice & text simulation</span>
-                <Link to="/practice-interview" className="ai-card-link">Start Practice ›</Link>
+                <button
+                  type="button"
+                  onClick={() => handleFeatureClick("/practice-interview")}
+                  className="ai-card-link"
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
+                >
+                  Start Practice ›
+                </button>
               </div>
             </div>
           </div>
@@ -559,6 +574,12 @@ function Welcome() {
                     onClick={() => navigate("/signup")}
                   >
                     Get Started for Free <ArrowRight size={16} />
+                  </button>
+                  <button
+                    className="cta-btn-outline"
+                    onClick={() => navigate("/login")}
+                  >
+                    Log In to Account
                   </button>
                   <button
                     className="cta-btn-outline"

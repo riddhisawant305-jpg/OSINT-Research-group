@@ -15,15 +15,18 @@ API.interceptors.request.use(
       return config;
     }
 
-    // Check for admin token first if requesting an admin endpoint or on the admin page
-    const isAdminEndpoint = config.url && config.url.includes("/admin");
+    // Check for admin token ONLY if requesting an admin endpoint or on the admin page
+    const isAdminEndpoint = config.url && (config.url.startsWith("/admin") || config.url.includes("/admin/"));
     const isOnAdminPage = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
     const adminToken = localStorage.getItem("cv_admin_token");
     const regularToken = localStorage.getItem("cv_token");
 
-    const token = (isAdminEndpoint || isOnAdminPage)
-      ? (adminToken || regularToken)
-      : (regularToken || adminToken);
+    let token = null;
+    if (isAdminEndpoint || isOnAdminPage) {
+      token = adminToken || regularToken;
+    } else {
+      token = regularToken;
+    }
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

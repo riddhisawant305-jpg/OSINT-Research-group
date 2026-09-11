@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
@@ -9,6 +9,7 @@ const GOOGLE_CLIENT_ID =
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, googleLogin } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -16,6 +17,8 @@ function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoaded, setGoogleLoaded] = useState(false);
+
+  const fromLocation = location.state?.from?.pathname;
 
   useEffect(() => {
     let intervalId = null;
@@ -63,11 +66,9 @@ function Login() {
     setLoading(true);
     try {
       const res = await googleLogin(response.credential, "student");
-      if (res.data?.role === "organization" || res.data?.role === "recruiter") {
-        navigate("/dashboard");
-      } else {
-        navigate("/home");
-      }
+      const isOrg = res.data?.role === "organization" || res.data?.role === "recruiter";
+      const target = fromLocation || (isOrg ? "/dashboard" : "/home");
+      navigate(target, { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Google Sign-In failed"
@@ -82,8 +83,10 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      navigate("/home");
+      const res = await login(email, password);
+      const isOrg = res.data?.role === "organization" || res.data?.role === "recruiter";
+      const target = fromLocation || (isOrg ? "/dashboard" : "/home");
+      navigate(target, { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Invalid credentials"

@@ -15,9 +15,11 @@ import {
   CheckCircle2,
   Sparkles
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import "./Footer.css";
 
 function Footer() {
+  const { user } = useAuth();
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -29,7 +31,7 @@ function Footer() {
         <div className="cv-footer-grid">
           {/* Column 1: Brand & Mission */}
           <div className="cv-footer-col cv-footer-brand-col">
-            <Link to="/home" className="cv-footer-logo" onClick={scrollToTop}>
+            <Link to={user ? "/home" : "/"} className="cv-footer-logo" onClick={scrollToTop}>
               <div className="cv-footer-logo-badge">CV</div>
               <span className="cv-footer-logo-text">
                 Career<span>Verse</span>

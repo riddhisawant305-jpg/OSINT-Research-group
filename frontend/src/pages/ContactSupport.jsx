@@ -55,6 +55,11 @@ function ContactSupport() {
 
   // Dynamic FAQs state
   const [faqs, setFaqs] = useState(defaultFaqsList);
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const toggleFaq = (idx) => {
+    setOpenFaq(openFaq === idx ? null : idx);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -73,7 +78,20 @@ function ContactSupport() {
   }, []);
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText("careerverse999@gmail.com");
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText("careerverse999@gmail.com");
+      } else {
+        const el = document.createElement("textarea");
+        el.value = "careerverse999@gmail.com";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
+    } catch (e) {
+      // ignore
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -229,14 +247,19 @@ function ContactSupport() {
               <a
                 href="mailto:careerverse999@gmail.com?subject=CareerVerse%20Support%20Inquiry"
                 className="email-action-link"
-                onClick={() => {
-                  window.location.href = "mailto:careerverse999@gmail.com?subject=CareerVerse%20Support%20Inquiry";
-                }}
               >
                 <Mail size={18} /> careerverse999@gmail.com
               </a>
 
               <div className="direct-email-buttons">
+                <a
+                  href="mailto:careerverse999@gmail.com?subject=CareerVerse%20Support%20Inquiry"
+                  className="btn-open-email"
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                >
+                  <Mail size={14} /> Open Mail Client
+                </a>
+
                 <button
                   type="button"
                   className="btn-copy-email"

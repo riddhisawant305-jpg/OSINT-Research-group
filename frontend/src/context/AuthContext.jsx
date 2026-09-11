@@ -1,21 +1,22 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import API from "../api/client";
-import { currentUser as defaultDummyUser } from "../data/dummyData";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("cv_token"));
   const [user, setUser] = useState(() => {
+    const storedToken = localStorage.getItem("cv_token");
+    if (!storedToken) return null;
     const saved = localStorage.getItem("cv_user");
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        return defaultDummyUser;
+        return null;
       }
     }
-    return defaultDummyUser;
+    return null;
   });
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +25,7 @@ export function AuthProvider({ children }) {
     const initAuth = async () => {
       const storedToken = localStorage.getItem("cv_token");
       if (!storedToken) {
+        setUser(null);
         setLoading(false);
         return;
       }
@@ -36,7 +38,13 @@ export function AuthProvider({ children }) {
           localStorage.setItem("cv_user", JSON.stringify(freshUser));
         }
       } catch (err) {
-        console.warn("Session validation failed, using cached session or login required.");
+        console.warn("Session validation failed:", err.message);
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          setToken(null);
+          setUser(null);
+          localStorage.removeItem("cv_token");
+          localStorage.removeItem("cv_user");
+        }
       } finally {
         setLoading(false);
       }
@@ -76,7 +84,7 @@ export function AuthProvider({ children }) {
       // ignore network errors on logout
     }
     setToken(null);
-    setUser(defaultDummyUser);
+    setUser(null);
     localStorage.removeItem("cv_token");
     localStorage.removeItem("cv_user");
   };
@@ -135,7 +143,7 @@ export function AuthProvider({ children }) {
         token,
         user,
         loading,
-        isAuthenticated: !!token,
+        isAuthenticated: !!token && !!user,
         login,
         signup,
         googleLogin,
