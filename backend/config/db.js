@@ -45,10 +45,11 @@ const getMongoUri = () => {
 const connectDB = async () => {
   try {
     const uri = getMongoUri();
-    await mongoose.connect(uri, {
+    const conn = await mongoose.connect(uri, {
+      dbName: "careerverse",
       serverSelectionTimeoutMS: 10000,
     });
-    console.log("MongoDB Connected Successfully");
+    console.log(`MongoDB Connected Successfully to database: "${conn.connection.name}"`);
   } catch (error) {
     console.error("Database Connection Failed:", error.message);
     process.exit(1);
