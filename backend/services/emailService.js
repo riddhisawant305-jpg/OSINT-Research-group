@@ -848,6 +848,167 @@ const sendBroadcastEmail = async ({ to, recipientName, subject, message }) => {
   });
 };
 
+/**
+ * 23. Official Administrator Email: Organization has Approached Candidate
+ */
+const sendCandidateApproachedByOrgEmail = async ({
+  to,
+  candidateName,
+  orgName,
+  orgEmail,
+  orgPhone,
+  orgWebsite,
+  orgIndustry,
+  orgLocation,
+  orgAbout,
+  hrName,
+  orgMessage,
+  orgProfileUrl,
+}) => {
+  if (!to) return;
+  const company = orgName || "A hiring organization";
+  return sendMailSafe({
+    from: '"CareerVerse Administration" <careerverse999@gmail.com>',
+    to: to.trim(),
+    subject: `CareerVerse Alert: ${company} has approached your profile!`,
+    html: renderEmailTemplate({
+      title: `CareerVerse Alert: ${company} Approached You`,
+      headline: `⭐ Direct Opportunity: ${company} viewed your profile & initiated contact!`,
+      bodyContent: `
+        <h2 class="greeting">Dear ${candidateName || "Candidate"},</h2>
+        <p>We are delighted to inform you that <strong>${company}</strong> has reviewed your CareerVerse credentials, projects, and background and has officially approached you for potential career and recruitment opportunities.</p>
+        
+        <div class="details-box">
+          <div class="details-row"><span class="details-label">Organization:</span><span class="details-value"><strong>${company}</strong></span></div>
+          ${orgIndustry ? `<div class="details-row"><span class="details-label">Industry:</span><span class="details-value">${orgIndustry}</span></div>` : ""}
+          ${orgLocation ? `<div class="details-row"><span class="details-label">Location:</span><span class="details-value">${orgLocation}</span></div>` : ""}
+          ${orgWebsite ? `<div class="details-row"><span class="details-label">Website:</span><span class="details-value"><a href="${orgWebsite}" target="_blank" style="color:#2563eb;">${orgWebsite}</a></span></div>` : ""}
+          ${hrName ? `<div class="details-row"><span class="details-label">Recruiter / Contact:</span><span class="details-value">${hrName}</span></div>` : ""}
+          ${orgEmail ? `<div class="details-row"><span class="details-label">Official Email:</span><span class="details-value"><a href="mailto:${orgEmail}" style="color:#2563eb;">${orgEmail}</a></span></div>` : ""}
+          ${orgPhone ? `<div class="details-row"><span class="details-label">Phone Contact:</span><span class="details-value">${orgPhone}</span></div>` : ""}
+        </div>
+
+        ${
+          orgMessage
+            ? `
+          <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:14px; border-radius:6px; margin:18px 0; font-size:14px;">
+            <strong>Message from ${company}:</strong><br>
+            <p style="margin:6px 0 0 0; color:#1e3a8a;">${orgMessage}</p>
+          </div>
+        `
+            : ""
+        }
+
+        ${
+          orgAbout
+            ? `
+          <p style="font-size:13.5px; color:#64748b; margin-top:14px;">
+            <strong>About ${company}:</strong> ${orgAbout}
+          </p>
+        `
+            : ""
+        }
+
+        <p style="margin-top:20px; font-size:14px; color:#475569;">
+          You can reach out directly to the organization using their contact details above or view their profile on CareerVerse.
+        </p>
+        <p>Best regards,<br><strong>CareerVerse Recruitment Support Team</strong></p>
+      `,
+      actionUrl: orgProfileUrl || "/dashboard",
+      actionText: "View Organization Details",
+    }),
+  });
+};
+
+/**
+ * 24. Official Administrator Email: Candidate-to-Candidate Approach / Networking
+ */
+const sendCandidateApproachedByCandidateEmail = async ({
+  to,
+  recipientName,
+  senderName,
+  senderHeadline,
+  senderEmail,
+  senderPhone,
+  senderLocation,
+  message,
+  senderProfileUrl,
+}) => {
+  if (!to) return;
+  return sendMailSafe({
+    from: '"CareerVerse Administration" <careerverse999@gmail.com>',
+    to: to.trim(),
+    subject: `CareerVerse Alert: ${senderName || "A candidate"} approached your profile!`,
+    html: renderEmailTemplate({
+      title: "New CareerVerse Candidate Approach",
+      headline: `🤝 Networking Approach: ${senderName || "A fellow candidate"} wants to connect!`,
+      bodyContent: `
+        <h2 class="greeting">Hello ${recipientName || "Colleague"},</h2>
+        <p><strong>${senderName || "A fellow professional"}</strong> found your CareerVerse profile and has officially approached you for collaboration, networking, or peer project opportunities.</p>
+        
+        <div class="details-box">
+          <div class="details-row"><span class="details-label">Name:</span><span class="details-value"><strong>${senderName}</strong></span></div>
+          ${senderHeadline ? `<div class="details-row"><span class="details-label">Headline:</span><span class="details-value">${senderHeadline}</span></div>` : ""}
+          ${senderLocation ? `<div class="details-row"><span class="details-label">Location:</span><span class="details-value">${senderLocation}</span></div>` : ""}
+          ${senderEmail ? `<div class="details-row"><span class="details-label">Email:</span><span class="details-value"><a href="mailto:${senderEmail}" style="color:#2563eb;">${senderEmail}</a></span></div>` : ""}
+          ${senderPhone ? `<div class="details-row"><span class="details-label">Phone:</span><span class="details-value">${senderPhone}</span></div>` : ""}
+        </div>
+
+        ${
+          message
+            ? `
+          <div style="background:#f8fafc; border-left:4px solid #7c3aed; padding:14px; border-radius:6px; margin:18px 0; font-size:14px;">
+            <strong>Note from ${senderName}:</strong><br>
+            <p style="margin:6px 0 0 0; color:#334155;">${message}</p>
+          </div>
+        `
+            : ""
+        }
+
+        <p>Best regards,<br><strong>The CareerVerse Team</strong></p>
+      `,
+      actionUrl: senderProfileUrl || "/network",
+      actionText: "View Candidate Profile",
+    }),
+  });
+};
+
+/**
+ * 25. Registration Email OTP Verification Email
+ */
+const sendRegistrationOtpEmail = async ({ to, otp }) => {
+  if (!to || !otp) return;
+  return sendMailSafe({
+    from: '"CareerVerse Security" <careerverse999@gmail.com>',
+    to: to.trim(),
+    subject: `Your CareerVerse Verification Code: ${otp}`,
+    html: renderEmailTemplate({
+      title: "Email Verification Code",
+      headline: "🔐 Secure Email Verification",
+      bodyContent: `
+        <h2 class="greeting">Welcome to CareerVerse!</h2>
+        <p>Thank you for initiating registration on CareerVerse. Please use the verification code below to verify your email address and activate your account:</p>
+        
+        <div style="text-align: center; margin: 28px 0;">
+          <div style="display: inline-block; background: #eff6ff; border: 2px dashed #2563eb; padding: 16px 36px; border-radius: 12px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1e40af; font-family: monospace;">
+            ${otp}
+          </div>
+          <p style="font-size: 13px; color: #64748b; margin-top: 10px;">
+            This one-time passcode (OTP) is valid for <strong>10 minutes</strong>. Do not share this code with anyone.
+          </p>
+        </div>
+
+        <p style="font-size: 13.5px; color: #475569;">
+          If you did not request this verification code, please disregard this email.
+        </p>
+        <p>Warm regards,<br><strong>CareerVerse Security Team</strong></p>
+      `,
+      actionUrl: "/signup",
+      actionText: "Complete Registration",
+    }),
+  });
+};
+
 module.exports = {
   transporter,
   sendWelcomeEmail,
@@ -879,5 +1040,9 @@ module.exports = {
   sendVerifiedBadgeEmail,
   sendContactSupportEmail,
   sendBroadcastEmail,
+  sendCandidateApproachedByOrgEmail,
+  sendCandidateApproachedByCandidateEmail,
+  sendRegistrationOtpEmail,
 };
+
 

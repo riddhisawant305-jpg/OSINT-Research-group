@@ -157,7 +157,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["student", "recruiter", "organization", "admin"],
+      enum: ["student", "candidate", "recruiter", "organization", "admin"],
       default: "student",
     },
 
@@ -175,6 +175,12 @@ const userSchema = new mongoose.Schema(
     isVerified: {
       type: Boolean,
       default: false,
+    },
+
+    // Candidate direct messaging control (on/off)
+    messagingEnabled: {
+      type: Boolean,
+      default: true,
     },
 
     verifiedAt: {
@@ -235,6 +241,36 @@ const userSchema = new mongoose.Schema(
       default: null,
       select: false,
     },
+
+    // Genuine analytics metrics & history
+    profileViews: {
+      type: Number,
+      default: 0,
+    },
+    profileViewHistory: [
+      {
+        viewer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        viewedAt: { type: Date, default: Date.now },
+      },
+    ],
+    searchAppearances: {
+      type: Number,
+      default: 0,
+    },
+    searchAppearanceHistory: [
+      {
+        searchedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    // Saved candidates for organizations
+    savedCandidates: [
+      {
+        candidate: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        savedAt: { type: Date, default: Date.now },
+        notes: { type: String, default: "" },
+      },
+    ],
   },
   {
     timestamps: true,

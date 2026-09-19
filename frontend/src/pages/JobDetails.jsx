@@ -30,13 +30,14 @@ import {
 import { jobs as fallbackJobs } from "../data/dummyData";
 import { useAuth } from "../context/AuthContext";
 import VerifiedBadge from "../component/VerifiedBadge";
+import ResumeOptimizerModal from "../component/ResumeOptimizerModal";
 import API from "../api/client";
 import "./JobDetails.css";
 
 function JobDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const [job, setJob] = useState(() => fallbackJobs.find((j) => j.id === Number(id)) || null);
   const [saved, setSaved] = useState(false);
@@ -49,6 +50,10 @@ function JobDetails() {
   const [matchingResume, setMatchingResume] = useState(false);
   const [matchResult, setMatchResult] = useState(null);
   const [matchError, setMatchError] = useState("");
+
+  // Strict Resume Required & Optimizer modal states
+  const [showResumeRequiredModal, setShowResumeRequiredModal] = useState(false);
+  const [resumeOptimizerOpen, setResumeOptimizerOpen] = useState(false);
 
   // Task 2: AI Mock Interview states
   const [showInterviewModal, setShowInterviewModal] = useState(false);
@@ -107,6 +112,13 @@ function JobDetails() {
 
   const handleApply = async () => {
     if (applied || loading) return;
+
+    // Strict validation: Candidate must have an uploaded resume
+    if (!user?.resume) {
+      setShowResumeRequiredModal(true);
+      return;
+    }
+
     setLoading(true);
 
     const targetJobId = job?._id || id;
@@ -127,9 +139,14 @@ function JobDetails() {
     } catch (err) {
       if (err.response && err.response.status === 409) {
         setApplied(true);
+      } else if (err.response?.data?.requiresResume) {
+        setShowResumeRequiredModal(true);
       } else {
         console.warn("Application submission error:", err.message);
-        setApplied(true);
+        alert(
+          err.response?.data?.message ||
+            "Failed to submit job application. Please check your profile and try again."
+        );
       }
     } finally {
       setLoading(false);
@@ -591,11 +608,27 @@ function JobDetails() {
             </div>
 
             <button
-              className={applied ? "applied-btn" : "btn-primary apply-btn"}
+              className={
+                applied
+                  ? "applied-btn"
+                  : !user?.resume
+                  ? "btn-primary apply-btn resume-prompt-btn"
+                  : "btn-primary apply-btn"
+              }
               onClick={handleApply}
               disabled={applied || loading}
             >
-              {applied ? "✓ Applied with Resume" : loading ? "Submitting Application..." : "Apply Now"}
+              {applied ? (
+                "✓ Applied with Resume"
+              ) : loading ? (
+                "Submitting Application..."
+              ) : !user?.resume ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <AlertCircle size={15} /> Upload Resume to Apply
+                </span>
+              ) : (
+                "Apply Now"
+              )}
             </button>
             <p className="apply-note">
               <ExternalLink size={13} /> {job.applicants || 0} candidates have applied
@@ -969,6 +1002,109 @@ function JobDetails() {
           </div>
         </div>
       )}
+
+      {/* Strict Resume Required Prompt Modal */}
+      {showResumeRequiredModal && (
+        <div
+          className="cv-modal-overlay"
+          onClick={() => setShowResumeRequiredModal(false)}
+        >
+          <div
+            className="cv-modal-dialog"
+            style={{ maxWidth: 480 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cv-modal-header">
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: "50%",
+                    background: "#fef3c7",
+                    color: "#d97706",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <AlertCircle size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18 }}>Resume Required</h3>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--cv-muted)" }}>
+                    Please upload your resume to apply for this opening
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="cv-modal-close"
+                onClick={() => setShowResumeRequiredModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: "20px 24px" }}>
+              <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 16px 0" }}>
+                CareerVerse requires an active uploaded resume in your profile before submitting job applications. This guarantees hiring organizations receive your verified background, projects, and contact credentials.
+              </p>
+
+              <div
+                style={{
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: 8,
+                  padding: 14,
+                  marginBottom: 20,
+                  fontSize: 13.5,
+                  color: "#1e40af",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                }}
+              >
+                <Sparkles size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                <span>
+                  <strong>Tip:</strong> Upload your PDF resume with our <strong>AI Resume Optimizer</strong> to automatically extract skills, calculate match scores, and enable 1-click applications!
+                </span>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={() => setShowResumeRequiredModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                  onClick={() => {
+                    setShowResumeRequiredModal(false);
+                    setResumeOptimizerOpen(true);
+                  }}
+                >
+                  <Sparkles size={16} /> Upload & Optimize Resume
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embedded Resume Optimizer Modal */}
+      <ResumeOptimizerModal
+        isOpen={resumeOptimizerOpen}
+        onClose={() => setResumeOptimizerOpen(false)}
+        onApplySuccess={(updated) => {
+          updateUser(updated);
+          setResumeOptimizerOpen(false);
+        }}
+      />
     </div>
   );
 }

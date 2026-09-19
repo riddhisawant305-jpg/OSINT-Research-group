@@ -686,3 +686,632 @@
   flex-shrink: 0;
 }
 
+/* =======================================================
+   DASHBOARD SECTIONS: APPLIED JOBS, APPROACHES, CONNECTIONS
+   ======================================================= */
+.dash-section-card {
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.dash-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dash-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+}
+
+.dash-empty-state h4 {
+  margin: 12px 0 6px 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.dash-empty-state p {
+  color: var(--cv-muted);
+  font-size: 13.5px;
+  max-width: 420px;
+  margin: 0;
+}
+
+/* Applied Jobs Table */
+.applied-jobs-table-wrap {
+  overflow-x: auto;
+}
+
+.applied-jobs-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.applied-jobs-table th {
+  padding: 12px 14px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.applied-jobs-table td {
+  padding: 14px;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 13.5px;
+  vertical-align: middle;
+}
+
+.applied-jobs-table tr:hover td {
+  background: #f8fafc;
+}
+
+.applied-job-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.clickable-title {
+  color: #1e293b;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.clickable-title:hover {
+  color: var(--cv-blue);
+  text-decoration: underline;
+}
+
+.applied-company-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--cv-muted);
+}
+
+.views-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.application-status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.application-status-badge.applied {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.application-status-badge.under-review {
+  background: #fefce8;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.application-status-badge.shortlisted {
+  background: #faf5ff;
+  color: #6d28d9;
+  border: 1px solid #e9d5ff;
+}
+
+.application-status-badge.accepted {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.application-status-badge.rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Tabs for Approaches */
+.dash-tab-group {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+  gap: 4px;
+}
+
+.dash-tab-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dash-tab-btn:hover {
+  color: #1e293b;
+}
+
+.dash-tab-btn.active {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Approaches Grid & Cards */
+.approaches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.approach-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.approach-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.approach-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.approach-card-sub {
+  margin: 2px 0 0 0;
+  font-size: 12.5px;
+  color: var(--cv-muted);
+}
+
+.org-role-tag {
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.approach-card-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.approach-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #334155;
+  word-break: break-all;
+}
+
+.approach-contact-item a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.approach-contact-item a:hover {
+  text-decoration: underline;
+}
+
+.approach-card-msg {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.approach-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Connections Grid & Cards in Dashboard */
+.dash-connections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.dash-connection-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  transition: all 0.2s ease;
+  overflow: visible;
+  text-align: left;
+}
+
+.dash-connection-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  border-color: #cbd5e1;
+}
+
+.dash-connection-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dash-connection-card .cv-avatar {
+  margin: 0 !important;
+  border: none !important;
+  flex-shrink: 0;
+}
+
+.dash-connection-headline {
+  margin: 2px 0 0 0;
+  font-size: 12.5px;
+  color: var(--cv-muted);
+  line-height: 1.35;
+}
+
+.dash-connection-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.dash-connection-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Direct Messaging Privacy Card */
+.dash-messaging-privacy-card {
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+}
+
+.dash-messaging-privacy-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.dash-messaging-privacy-info {
+  flex: 1;
+  min-width: 280px;
+}
+
+.dash-msg-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-messaging-rule-desc {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.dash-messaging-toggle-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.dash-msg-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.dash-msg-status-pill.active {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.dash-msg-status-pill.disabled {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-msg-enable {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-msg-enable:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+}
+
+.btn-msg-disable {
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-msg-disable:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+/* Organization Saved Candidates Styles */
+.org-saved-candidates-card {
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.org-saved-candidates-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.saved-candidates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.saved-candidate-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.saved-candidate-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.saved-candidate-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+
+.saved-candidate-headline {
+  margin: 2px 0 4px 0;
+  font-size: 12.5px;
+  color: var(--cv-muted);
+}
+
+.saved-status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.saved-status-badge.approached {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.saved-status-badge.saved_details {
+  background: #fefce8;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.btn-remove-saved {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-remove-saved:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.saved-candidate-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.saved-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #334155;
+  word-break: break-all;
+}
+
+.saved-contact-item a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.saved-contact-item a:hover {
+  text-decoration: underline;
+}
+
+.saved-candidate-skills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.saved-candidate-note {
+  background: #f1f5f9;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.saved-candidate-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 6px;
+}
+
+.no-resume-text {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-style: italic;
+  margin-right: auto;
+}
+
+.verified-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+

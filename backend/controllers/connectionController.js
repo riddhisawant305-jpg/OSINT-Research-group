@@ -33,6 +33,18 @@ const getConnections = async (req, res, next) => {
       .select("name headline location avatarColor initials profilePhoto isVerified role companyName skills")
       .limit(60);
 
+    // Track genuine search appearances
+    if (users.length > 0) {
+      const userIds = users.map((u) => u._id);
+      User.updateMany(
+        { _id: { $in: userIds } },
+        {
+          $inc: { searchAppearances: 1 },
+          $push: { searchAppearanceHistory: { searchedAt: new Date() } },
+        }
+      ).catch((e) => console.warn("[SearchTrack] Error:", e.message));
+    }
+
     const formatted = users.map((u) => {
       const connInfo = userId ? connectionMap.get(u._id.toString()) : null;
       const isConnected = connInfo && connInfo.status === "accepted";

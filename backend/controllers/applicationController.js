@@ -51,14 +51,23 @@ const applyForJob = async (req, res, next) => {
 
     const { resume, resumeFileName, resumeFileType, coverLetter } = req.body;
 
+    const candidateResume = resume || req.user.resume;
+    if (!candidateResume || !candidateResume.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "A saved resume in your profile is strictly required to apply for jobs. Please upload your resume in your profile first.",
+        requiresResume: true,
+      });
+    }
+
     const application = await Application.create({
       applicant: applicantId,
       job: job._id,
-      resume: resume || req.user.resume || "",
+      resume: candidateResume,
       resumeFileName:
         resumeFileName ||
         req.user.resumeFileName ||
-        (req.user.resume ? "Applicant_Resume.pdf" : ""),
+        "Applicant_Resume.pdf",
       resumeFileType:
         resumeFileType ||
         req.user.resumeFileType ||
@@ -181,6 +190,12 @@ const getJobApplications = async (req, res, next) => {
     const applications = await Application.find({ job: job._id })
       .populate("applicant", "name email headline skills education experience resume resumeFileName resumeFileType avatarColor initials")
       .sort("-createdAt");
+
+    // Track legitimate application views for candidates
+    await Application.updateMany(
+      { job: job._id },
+      { $inc: { viewsCount: 1 }, $set: { lastViewedAt: new Date() } }
+    );
 
     res.status(200).json({
       success: true,

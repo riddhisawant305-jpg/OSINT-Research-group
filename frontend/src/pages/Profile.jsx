@@ -17,6 +17,9 @@ import {
   Phone,
   ArrowLeft,
   Camera,
+  Send,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import { currentUser as fallbackUser } from "../data/dummyData";
 import { useAuth } from "../context/AuthContext";
@@ -42,6 +45,48 @@ function Profile() {
   const [optimizerOpen, setOptimizerOpen] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const avatarInputRef = useRef(null);
+
+  // Approach Modal State
+  const [approachModalOpen, setApproachModalOpen] = useState(false);
+  const [approachMessage, setApproachMessage] = useState("");
+  const [approachSubmitting, setApproachSubmitting] = useState(false);
+  const [approachSuccess, setApproachSuccess] = useState("");
+
+  const handleApproachCandidate = async (actionType) => {
+    if (!profileUser?._id) return;
+    setApproachSubmitting(true);
+    setApproachSuccess("");
+    try {
+      await API.post("/approaches", {
+        recipientId: profileUser._id,
+        action: actionType,
+        message: approachMessage.trim(),
+      });
+
+      if (actionType === "approach") {
+        setApproachSuccess(
+          `Candidate approached successfully! An official email notification from administration has been dispatched to ${profileUser.name}.`
+        );
+      } else {
+        const isOrg = user?.role === "organization" || user?.role === "recruiter";
+        setApproachSuccess(
+          isOrg
+            ? "Candidate contact details saved to your Organization Dashboard under 'Saved Candidates'!"
+            : "Candidate details saved to your dashboard!"
+        );
+      }
+
+      setTimeout(() => {
+        setApproachModalOpen(false);
+        setApproachSuccess("");
+        setApproachMessage("");
+      }, 2400);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to process approach. Please try again.");
+    } finally {
+      setApproachSubmitting(false);
+    }
+  };
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files && e.target.files[0];
@@ -532,7 +577,7 @@ function Profile() {
                 )}
               </div>
 
-            {isOwnProfile && (
+            {isOwnProfile ? (
               <button
                 type="button"
                 className="edit-btn ai-opt-btn"
@@ -541,7 +586,16 @@ function Profile() {
               >
                 <Sparkles size={16} color="#7c3aed" /> Optimize with AI Resume
               </button>
-            )}
+            ) : user && activeUser.role !== "organization" && activeUser.role !== "recruiter" ? (
+              <button
+                type="button"
+                className="edit-btn approach-btn"
+                onClick={() => setApproachModalOpen(true)}
+                title="Approach this candidate"
+              >
+                <Send size={15} /> APPROACH
+              </button>
+            ) : null}
 
             <h1 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               {activeUser.name}
@@ -790,6 +844,190 @@ function Profile() {
           onClose={() => setOptimizerOpen(false)}
           onApplySuccess={(updated) => updateUser(updated)}
         />
+      )}
+
+      {/* APPROACH CONFIRMATION MODAL */}
+      {approachModalOpen && (
+        <div
+          className="cv-modal-overlay"
+          onClick={() => !approachSubmitting && setApproachModalOpen(false)}
+        >
+          <div
+            className="cv-modal-dialog approach-modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cv-modal-header">
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="approach-modal-icon">
+                  <Send size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18 }}>
+                    Approach Candidate: {activeUser.name}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 12.5, color: "var(--cv-muted)" }}>
+                    Review candidate contact details and confirm your direct approach.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="cv-modal-close"
+                onClick={() => !approachSubmitting && setApproachModalOpen(false)}
+                disabled={approachSubmitting}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="approach-modal-body">
+              {approachSuccess ? (
+                <div className="approach-success-banner">
+                  <CheckCircle size={22} color="#059669" />
+                  <p>{approachSuccess}</p>
+                </div>
+              ) : (
+                <>
+                  {/* Candidate Contact Details Preview */}
+                  <div className="approach-contact-card">
+                    <div className="approach-contact-top">
+                      <Avatar user={activeUser} size={48} />
+                      <div>
+                        <h4 style={{ margin: "0 0 2px 0", fontSize: 16 }}>
+                          {activeUser.name}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: 13, color: "var(--cv-muted)" }}>
+                          {activeUser.headline || "CareerVerse Candidate"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="approach-details-grid">
+                      <div className="approach-detail-item">
+                        <Mail size={15} color="var(--cv-blue)" />
+                        <div>
+                          <small>Email</small>
+                          <a href={`mailto:${activeUser.email}`}>{activeUser.email}</a>
+                        </div>
+                      </div>
+
+                      <div className="approach-detail-item">
+                        <Phone size={15} color="var(--cv-blue)" />
+                        <div>
+                          <small>Phone</small>
+                          <span>{activeUser.phone || "Not specified"}</span>
+                        </div>
+                      </div>
+
+                      <div className="approach-detail-item">
+                        <MapPin size={15} color="var(--cv-blue)" />
+                        <div>
+                          <small>Location</small>
+                          <span>{activeUser.location || "India"}</span>
+                        </div>
+                      </div>
+
+                      <div className="approach-detail-item">
+                        <FileText size={15} color="var(--cv-blue)" />
+                        <div>
+                          <small>Resume</small>
+                          {activeUser.resume ? (
+                            <button
+                              type="button"
+                              className="approach-resume-link"
+                              onClick={() =>
+                                handleDownloadResume(
+                                  activeUser.resume,
+                                  activeUser.resumeFileName
+                                )
+                              }
+                            >
+                              <Download size={12} /> Download Resume
+                            </button>
+                          ) : (
+                            <span style={{ color: "#9ca3af" }}>No resume on file</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {skillsList && skillsList.length > 0 && (
+                      <div className="approach-skills-wrap">
+                        <small style={{ display: "block", marginBottom: 6, color: "var(--cv-muted)" }}>
+                          Key Skills & Expertise:
+                        </small>
+                        <div className="skill-tags">
+                          {skillsList.slice(0, 6).map((s) => (
+                            <span className="tag" key={s}>
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Warning on Confirmation */}
+                  <div className="approach-warning-box">
+                    <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <strong>Confirmation Warning:</strong>
+                      <p style={{ margin: "4px 0 0 0", fontSize: 13, lineHeight: 1.5 }}>
+                        {user?.role === "organization" || user?.role === "recruiter"
+                          ? `Accepting will send an official notification email to ${activeUser.name} from CareerVerse Administration. The email will share your organization details (${user?.companyName || user?.name}), HR contacts, and interview/hiring intent.`
+                          : `Accepting will send an official notification email to ${activeUser.name} from CareerVerse Administration sharing your profile, contact details, and networking request.`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Optional message textarea */}
+                  <div className="approach-message-box">
+                    <label>Personalized Message / Outreach Note (Optional):</label>
+                    <textarea
+                      rows={3}
+                      placeholder={
+                        user?.role === "organization" || user?.role === "recruiter"
+                          ? "e.g. We were impressed with your recent project work and would love to discuss an open SDE position at our team..."
+                          : "e.g. Hi, I noticed we share interests in full-stack architecture and would like to connect for collaboration..."
+                      }
+                      value={approachMessage}
+                      onChange={(e) => setApproachMessage(e.target.value)}
+                      disabled={approachSubmitting}
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="approach-actions">
+                    <button
+                      type="button"
+                      className="btn-outline approach-save-btn"
+                      onClick={() => handleApproachCandidate("save_details")}
+                      disabled={approachSubmitting}
+                      title="Save candidate details to your dashboard and contact them personally"
+                    >
+                      Save the Details & Contact Personally
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-primary approach-confirm-btn"
+                      onClick={() => handleApproachCandidate("approach")}
+                      disabled={approachSubmitting}
+                    >
+                      {approachSubmitting ? (
+                        "Sending Approach..."
+                      ) : (
+                        <>
+                          <Send size={15} /> Confirm Approach (Send Email)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
       </div>
     </>

@@ -11,6 +11,7 @@ import {
   Edit3,
   LogOut,
   Award,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import API from "../api/client";
@@ -110,6 +111,7 @@ export function Navbar() {
   const links = user ? [
     { to: "/home", label: "Home", Icon: Home },
     ...(!isOrg ? [{ to: "/jobs", label: "Jobs", Icon: Briefcase }] : []),
+    ...(!isOrg ? [{ to: "/messages", label: "Messages", Icon: MessageSquare }] : []),
     { to: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
     ...(isOrg ? [{ to: "/hired", label: "Hired", Icon: Award }] : []),
     { to: "/notifications", label: "Notifications", Icon: Bell, badge: unreadCount },

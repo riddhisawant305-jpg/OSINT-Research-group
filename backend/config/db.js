@@ -39,7 +39,10 @@ const getMongoUri = () => {
     return process.env.MONGO_URI;
   }
 
-  throw new Error("MongoDB URI not found in environment or atlas-credentials.env");
+  console.warn(
+    "Warning: Neither MONGO_URI nor MONGODB_URI found in environment. Defaulting to local mongodb://127.0.0.1:27017/careerverse. Please configure backend/.env using backend/.env.example."
+  );
+  return "mongodb://127.0.0.1:27017/careerverse";
 };
 
 const connectDB = async () => {

@@ -35,6 +35,19 @@ const getUserById = async (req, res, next) => {
 
     const userData = user.toObject();
 
+    // Track genuine profile view when viewed by another logged-in user
+    if (req.user && req.user._id.toString() !== user._id.toString()) {
+      user.profileViews = (user.profileViews || 0) + 1;
+      user.profileViewHistory = user.profileViewHistory || [];
+      user.profileViewHistory.push({
+        viewer: req.user._id,
+        viewedAt: new Date(),
+      });
+      await user.save().catch((err) =>
+        console.warn("[ProfileView] Could not save view record:", err.message)
+      );
+    }
+
     // If user is an organization or recruiter, attach the jobs they posted
     if (user.role === "recruiter" || user.role === "organization") {
       const Job = require("../models/Job");
@@ -531,35 +544,57 @@ const deleteProject = async (req, res, next) => {
 // @desc    Get dashboard statistics
 // @route   GET /api/users/me/dashboard
 // @access  Private
+// @desc    Get dashboard statistics
+// @route   GET /api/users/me/dashboard
+// @access  Private
 const getDashboard = async (req, res, next) => {
   try {
     const userId = req.user._id;
     const user = await User.findById(userId);
 
-    // Parallel counts from database
+    const Approach = require("../models/Approach");
+
+    // Parallel queries from database for real data
     const [
       postsCount,
-      applicationsCount,
+      allUserApplications,
       savedJobsCount,
-      connectionsCount,
-      recentApplications,
+      connectionsListRaw,
       recentPosts,
+      sentApproaches,
+      receivedApproaches,
+      orgApproachesReceived,
     ] = await Promise.all([
       Post.countDocuments({ author: userId }),
-      Application.countDocuments({ applicant: userId }),
+      Application.find({ applicant: userId })
+        .populate("job", "title company location salary type workplaceType applicantsCount")
+        .sort("-createdAt"),
       SavedJob.countDocuments({ user: userId }),
-      Connection.countDocuments({
+      Connection.find({
         $or: [
           { requester: userId, status: "accepted" },
           { recipient: userId, status: "accepted" },
         ],
-      }),
-      Application.find({ applicant: userId })
-        .populate("job", "title company location salary type")
-        .sort("-createdAt")
-        .limit(5),
+      })
+        .populate("requester", "name headline email phone location role companyName avatarColor initials profilePhoto isVerified")
+        .populate("recipient", "name headline email phone location role companyName avatarColor initials profilePhoto isVerified")
+        .sort("-updatedAt"),
       Post.find({ author: userId }).sort("-createdAt").limit(5),
+      Approach.find({ sender: userId })
+        .populate("recipient", "name headline email phone location skills avatarColor profilePhoto resume resumeFileName isVerified role companyName")
+        .sort("-createdAt"),
+      Approach.find({ recipient: userId, status: "approached" })
+        .populate("sender", "name headline email phone location skills avatarColor profilePhoto companyName companyWebsite companyIndustry hrDetails organizationDetails isVerified role")
+        .sort("-createdAt"),
+      Approach.countDocuments({
+        recipient: userId,
+        senderType: "organization",
+        status: "approached",
+      }),
     ]);
+
+    const applicationsCount = allUserApplications.length;
+    const connectionsCount = connectionsListRaw.length;
 
     // Calculate real profile strength percentage based on profile completeness
     let strength = 20; // Base score for having an account
@@ -572,13 +607,25 @@ const getDashboard = async (req, res, next) => {
     if (user.projects && user.projects.length > 0) strength += 10;
     strength = Math.min(100, strength);
 
-    // Dynamic career stats derived from real numbers + baseline multipliers
+    // Sum legitimate application views across user's actual applications
+    const totalApplicationViews = allUserApplications.reduce(
+      (sum, app) => sum + (app.viewsCount || 0),
+      0
+    );
+
+    // Count accepted/shortlisted applications + direct organization approaches
+    const acceptedOrShortlistedCount = allUserApplications.filter((app) =>
+      ["Accepted", "Shortlisted"].includes(app.status)
+    ).length;
+    const realInterviewInvites = acceptedOrShortlistedCount + orgApproachesReceived;
+
+    // Genuine career stats derived directly from tracked records
     const careerStats = {
       profileStrength: strength,
-      applicationViews: Math.max(applicationsCount * 12, 14),
-      profileViews: Math.max(connectionsCount * 8 + postsCount * 15, 25),
-      searchAppearances: Math.max(((user.skills && user.skills.length) || 1) * 14 + postsCount * 6, 18),
-      interviewInvites: applicationsCount > 0 ? Math.floor(applicationsCount / 3) : 0,
+      profileViews: user.profileViews || 0,
+      searchAppearances: user.searchAppearances || 0,
+      applicationViews: totalApplicationViews,
+      interviewInvites: realInterviewInvites,
       connectionRequests: await Connection.countDocuments({
         recipient: userId,
         status: "pending",
@@ -589,21 +636,110 @@ const getDashboard = async (req, res, next) => {
       connectionsCount,
     };
 
-    // Skill progress calculations based on user's real skills
-    const rawSkills =
+    // Legitimate 6-month Profile Activity calculation
+    const monthNames = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+    const now = new Date();
+    const monthlyActivity = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mIdx = d.getMonth();
+      const yr = d.getFullYear();
+      const mName = monthNames[mIdx];
+
+      const startOfMonth = new Date(yr, mIdx, 1);
+      const endOfMonth = new Date(yr, mIdx + 1, 0, 23, 59, 59, 999);
+
+      const mViews = (user.profileViewHistory || []).filter(
+        (v) => v.viewedAt && v.viewedAt >= startOfMonth && v.viewedAt <= endOfMonth
+      ).length;
+
+      const mSearches = (user.searchAppearanceHistory || []).filter(
+        (s) => s.searchedAt && s.searchedAt >= startOfMonth && s.searchedAt <= endOfMonth
+      ).length;
+
+      monthlyActivity.push({
+        month: mName,
+        views: mViews,
+        searches: mSearches,
+      });
+    }
+
+    // Legitimate Skill Proficiency based on user's real skills & portfolio
+    const userProjectsText = (user.projects || [])
+      .map(
+        (p) =>
+          (p.title || "") +
+          " " +
+          (p.technologies || []).join(" ") +
+          " " +
+          (p.description || "")
+      )
+      .join(" ")
+      .toLowerCase();
+    const userExpText = (user.experience || [])
+      .map((e) => (e.role || "") + " " + (e.description || ""))
+      .join(" ")
+      .toLowerCase();
+
+    const activeSkills =
       user.skills && user.skills.length > 0
         ? user.skills
-        : ["React", "JavaScript", "Problem Solving", "Communication"];
-    const skillProgress = rawSkills.map((skill, idx) => ({
-      name: skill,
-      skill,
-      level: Math.min(95, 60 + ((idx * 11) % 35)),
-    }));
+        : ["Problem Solving", "Communication", "Technical Fundamentals"];
+
+    const skillProgress = activeSkills.map((skill) => {
+      const sLower = skill.toLowerCase();
+      let lvl = 65;
+      if (userProjectsText.includes(sLower)) lvl += 15;
+      if (userExpText.includes(sLower)) lvl += 10;
+      if (user.isVerified) lvl += 5;
+      lvl = Math.min(95, lvl);
+      return {
+        name: skill,
+        skill,
+        level: lvl,
+      };
+    });
+
+    // Format confirmed connections for candidate dashboard
+    const formattedConnections = connectionsListRaw.map((c) => {
+      const partner =
+        c.requester._id.toString() === userId.toString()
+          ? c.recipient
+          : c.requester;
+      return {
+        _id: c._id,
+        partner,
+        connectedAt: c.updatedAt || c.createdAt,
+      };
+    });
+
+    // Format applied jobs for candidate dashboard
+    const formattedAppliedJobs = allUserApplications
+      .filter((app) => app.job != null)
+      .map((app) => ({
+        _id: app._id,
+        jobId: app.job._id,
+        title: app.job.title,
+        company: app.job.company,
+        location: app.job.location,
+        salary: app.job.salary || "Competitive",
+        type: app.job.type || "Full-time",
+        workplaceType: app.job.workplaceType || "On-site",
+        status: app.status || "Applied",
+        appliedAt: app.createdAt,
+        viewsCount: app.viewsCount || 0,
+      }));
 
     // Organization specific stats and jobs
     let recruiterStats = null;
     let postedJobs = [];
     let hiredEmployees = [];
+    let savedCandidates = [];
+
     if (user.role === "recruiter" || user.role === "organization") {
       const Job = require("../models/Job");
       const jobQuery = {
@@ -630,6 +766,51 @@ const getDashboard = async (req, res, next) => {
         shortlistedCount: shortlisted,
         acceptedCount: Math.max(accepted, hiredEmployees.length),
       };
+
+      // Populate saved candidates for organization
+      const approachSaved = await Approach.find({
+        sender: userId,
+        status: { $in: ["saved_details", "approached"] },
+      })
+        .populate(
+          "recipient",
+          "name headline email phone location skills avatarColor profilePhoto resume resumeFileName resumeFileType resumeUpdatedAt isVerified role about education experience"
+        )
+        .sort("-updatedAt");
+
+      const savedMap = new Map();
+      approachSaved.forEach((item) => {
+        if (item.recipient && item.recipient._id) {
+          const cId = item.recipient._id.toString();
+          savedMap.set(cId, {
+            _id: item._id,
+            candidate: item.recipient,
+            status: item.status,
+            notes: item.notes || item.message || "",
+            savedAt: item.updatedAt || item.createdAt,
+          });
+        }
+      });
+
+      if (user.savedCandidates) {
+        await user.populate("savedCandidates.candidate");
+        user.savedCandidates.forEach((item) => {
+          if (item.candidate && item.candidate._id) {
+            const cId = item.candidate._id.toString();
+            if (!savedMap.has(cId)) {
+              savedMap.set(cId, {
+                _id: item._id || cId,
+                candidate: item.candidate,
+                status: "saved_details",
+                notes: item.notes || "",
+                savedAt: item.savedAt || new Date(),
+              });
+            }
+          }
+        });
+      }
+
+      savedCandidates = Array.from(savedMap.values());
     }
 
     res.status(200).json({
@@ -659,13 +840,22 @@ const getDashboard = async (req, res, next) => {
           avatarColor: user.avatarColor,
           profilePhoto: user.profilePhoto || "",
           isVerified: !!user.isVerified,
+          messagingEnabled: user.messagingEnabled !== false,
         },
         careerStats,
+        monthlyActivity,
+        skillProgress,
+        connections: formattedConnections,
+        appliedJobs: formattedAppliedJobs,
+        approaches: {
+          sent: sentApproaches,
+          received: receivedApproaches,
+        },
         recruiterStats,
         postedJobs,
         hiredEmployees,
-        skillProgress,
-        recentApplications,
+        savedCandidates,
+        recentApplications: allUserApplications.slice(0, 5),
         recentPosts,
       },
     });
@@ -862,6 +1052,36 @@ const deleteHiredEmployee = async (req, res, next) => {
   }
 };
 
+// @desc    Toggle candidate direct messaging preference (on/off)
+// @route   PUT /api/users/me/messaging-toggle
+// @access  Private
+const toggleMessagingPreference = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (typeof req.body.messagingEnabled === "boolean") {
+      user.messagingEnabled = req.body.messagingEnabled;
+    } else {
+      user.messagingEnabled = !user.messagingEnabled;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Direct messaging has been ${user.messagingEnabled ? "enabled" : "disabled"}.`,
+      data: {
+        messagingEnabled: user.messagingEnabled,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMyProfile,
   getUserById,
@@ -884,4 +1104,6 @@ module.exports = {
   createHiredEmployee,
   updateHiredEmployee,
   deleteHiredEmployee,
+  toggleMessagingPreference,
 };
+

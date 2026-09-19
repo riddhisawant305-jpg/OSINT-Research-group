@@ -256,6 +256,9 @@ function HiredEmployees() {
             <option value="Active">Active</option>
             <option value="Joined">Joined</option>
             <option value="Offer Accepted">Offer Accepted</option>
+            <option value="Onboarding">Onboarding</option>
+            <option value="Probation">Probation</option>
+            <option value="Full-Time">Full-Time</option>
             <option value="Completed">Completed</option>
             <option value="Resigned">Resigned</option>
           </select>
@@ -595,6 +598,9 @@ function HiredEmployees() {
                     <option value="Active">Active</option>
                     <option value="Joined">Joined</option>
                     <option value="Offer Accepted">Offer Accepted</option>
+                    <option value="Onboarding">Onboarding</option>
+                    <option value="Probation">Probation</option>
+                    <option value="Full-Time">Full-Time</option>
                     <option value="Completed">Completed</option>
                     <option value="Resigned">Resigned</option>
                   </select>

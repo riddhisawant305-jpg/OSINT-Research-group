@@ -33,6 +33,10 @@ import {
   Award,
   Trash2,
   Edit3,
+  Bookmark,
+  Send,
+  MapPin,
+  UserPlus,
 } from "lucide-react";
 import {
   careerStats as fallbackStats,
@@ -62,6 +66,16 @@ function Dashboard() {
   // Candidate state
   const [statsData, setStatsData] = useState(fallbackStats);
   const [skillsData, setSkillsData] = useState(fallbackSkills);
+  const [monthlyActivity, setMonthlyActivity] = useState(activity);
+  const [connections, setConnections] = useState([]);
+  const [appliedJobs, setAppliedJobs] = useState([]);
+  const [approaches, setApproaches] = useState({ sent: [], received: [] });
+  const [approachTab, setApproachTab] = useState("received");
+  const [savedCandidates, setSavedCandidates] = useState([]);
+  const [messagingEnabled, setMessagingEnabled] = useState(
+    user?.messagingEnabled !== false
+  );
+  const [togglingMessaging, setTogglingMessaging] = useState(false);
 
   // Organization state
   const [recruiterStats, setRecruiterStats] = useState({
@@ -195,6 +209,9 @@ function Dashboard() {
       if (res.data && res.data.data) {
         const d = res.data.data;
         if (d.careerStats) setStatsData(d.careerStats);
+        if (d.monthlyActivity && d.monthlyActivity.length > 0) {
+          setMonthlyActivity(d.monthlyActivity);
+        }
         if (d.skillProgress && d.skillProgress.length > 0) {
           setSkillsData(
             d.skillProgress.map((item) => ({
@@ -205,6 +222,14 @@ function Dashboard() {
           );
         }
 
+        if (d.connections) setConnections(d.connections);
+        if (d.appliedJobs) setAppliedJobs(d.appliedJobs);
+        if (d.approaches) setApproaches(d.approaches);
+        if (d.savedCandidates) setSavedCandidates(d.savedCandidates);
+        if (d.user && typeof d.user.messagingEnabled === "boolean") {
+          setMessagingEnabled(d.user.messagingEnabled);
+        }
+
         if (d.recruiterStats) setRecruiterStats(d.recruiterStats);
         if (d.postedJobs) setPostedJobs(d.postedJobs);
         if (d.hiredEmployees) setHiredEmployees(d.hiredEmployees);
@@ -213,6 +238,40 @@ function Dashboard() {
       console.warn("Could not load backend dashboard data:", err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleMessaging = async () => {
+    setTogglingMessaging(true);
+    try {
+      const nextState = !messagingEnabled;
+      const res = await API.put("/users/me/messaging-toggle", {
+        messagingEnabled: nextState,
+      });
+      if (res.data && res.data.data) {
+        setMessagingEnabled(res.data.data.messagingEnabled);
+        updateUser({ ...user, messagingEnabled: res.data.data.messagingEnabled });
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to update messaging settings");
+    } finally {
+      setTogglingMessaging(false);
+    }
+  };
+
+  const handleRemoveSavedCandidate = async (candidateId) => {
+    if (!window.confirm("Remove candidate from your saved list?")) return;
+    try {
+      await API.delete(`/approaches/saved-candidates/${candidateId}`);
+      setSavedCandidates((prev) =>
+        prev.filter(
+          (sc) =>
+            (sc.candidate?._id || sc.candidate?.id || sc._id) !== candidateId &&
+            sc.candidate?._id !== candidateId
+        )
+      );
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to remove candidate");
     }
   };
 
@@ -664,6 +723,142 @@ function Dashboard() {
           >
             Open Hired Screen <ArrowRight size={15} />
           </button>
+        </div>
+
+        {/* -------------------------------------------------- */}
+        {/* SAVED CANDIDATES & OUTREACH SECTION                */}
+        {/* -------------------------------------------------- */}
+        <div className="card org-saved-candidates-card" style={{ marginTop: 24 }}>
+          <div className="org-saved-candidates-header">
+            <div>
+              <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                <Bookmark size={18} color="var(--cv-blue)" /> Saved Candidates & Direct Outreach ({savedCandidates.length})
+              </h3>
+              <p style={{ color: "var(--cv-muted)", fontSize: 13, margin: "4px 0 0 0" }}>
+                Candidate profiles you have directly approached or saved contact details to reach out to personally.
+              </p>
+            </div>
+          </div>
+
+          {savedCandidates.length === 0 ? (
+            <div className="empty-jobs-banner" style={{ padding: "36px 20px" }}>
+              <Users size={36} color="#9ca3af" />
+              <h4>No candidates saved yet</h4>
+              <p>When you approach candidates or save their contact information from their profile, they will appear here.</p>
+            </div>
+          ) : (
+            <div className="saved-candidates-grid">
+              {savedCandidates.map((item) => {
+                const cand = item.candidate || {};
+                const candId = cand._id || cand.id;
+                const hasResume = !!cand.resume;
+                const resumeName =
+                  cand.resumeFileName ||
+                  `${cand.name ? cand.name.replace(/\s+/g, "_") : "Candidate"}_Resume.pdf`;
+
+                return (
+                  <div key={item._id || candId} className="saved-candidate-card">
+                    <div className="saved-candidate-top">
+                      <Avatar user={cand} size={48} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <h4
+                            style={{ margin: 0, fontSize: 15, cursor: "pointer" }}
+                            onClick={() => candId && navigate(`/profile/${candId}`)}
+                          >
+                            {cand.name || "Candidate"}
+                          </h4>
+                          {cand.isVerified && <span className="verified-badge-inline">✓</span>}
+                        </div>
+                        <p className="saved-candidate-headline">
+                          {cand.headline || "CareerVerse Candidate"}
+                        </p>
+                        <span className={`saved-status-badge ${item.status}`}>
+                          {item.status === "approached" ? "Direct Approached" : "Details Saved"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-remove-saved"
+                        title="Remove candidate from saved list"
+                        onClick={() => handleRemoveSavedCandidate(candId || item._id)}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+
+                    <div className="saved-candidate-contacts">
+                      <div className="saved-contact-item">
+                        <Mail size={13} color="var(--cv-blue)" />
+                        <a href={`mailto:${cand.email}`}>{cand.email}</a>
+                      </div>
+                      {cand.phone && (
+                        <div className="saved-contact-item">
+                          <Phone size={13} color="var(--cv-blue)" />
+                          <a href={`tel:${cand.phone}`}>{cand.phone}</a>
+                        </div>
+                      )}
+                      {cand.location && (
+                        <div className="saved-contact-item">
+                          <MapPin size={13} color="var(--cv-blue)" />
+                          <span>{cand.location}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {cand.skills && (
+                      <div className="saved-candidate-skills">
+                        {(Array.isArray(cand.skills)
+                          ? cand.skills
+                          : typeof cand.skills === "string"
+                          ? cand.skills.split(",")
+                          : []
+                        )
+                          .slice(0, 4)
+                          .map((s) => (
+                            <span key={s} className="tag">
+                              {s.trim()}
+                            </span>
+                          ))}
+                      </div>
+                    )}
+
+                    {item.notes && (
+                      <div className="saved-candidate-note">
+                        <strong>Outreach Note:</strong> {item.notes}
+                      </div>
+                    )}
+
+                    <div className="saved-candidate-actions">
+                      {hasResume ? (
+                        <button
+                          type="button"
+                          className="btn-outline resume-btn"
+                          onClick={() =>
+                            handleDownloadResume(cand.resume, cand.name, resumeName)
+                          }
+                        >
+                          <FileText size={13} /> Resume
+                        </button>
+                      ) : (
+                        <span className="no-resume-text">No resume on file</span>
+                      )}
+
+                      {candId && (
+                        <button
+                          type="button"
+                          className="btn-primary profile-btn"
+                          onClick={() => navigate(`/profile/${candId}`)}
+                        >
+                          <ExternalLink size={13} /> View Profile
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* -------------------------------------------------- */}
@@ -1297,26 +1492,32 @@ function Dashboard() {
 
       <div className="dash-grid">
         <div className="card dash-chart">
-          <h3>Profile Activity</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>Profile Activity</h3>
+            <span style={{ fontSize: 12, color: "var(--cv-muted)" }}>Last 6 Months (Legitimate Analytics)</span>
+          </div>
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={activity}
+                data={monthlyActivity}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="views" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="searches" fill="#a78bfa" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="views" fill="#2563eb" name="Profile Views" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="searches" fill="#a78bfa" name="Search Appearances" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="card dash-chart">
-          <h3>Skill Proficiency</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>Skill Proficiency</h3>
+            <span style={{ fontSize: 12, color: "var(--cv-muted)" }}>Portfolio & Project Backed</span>
+          </div>
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
@@ -1330,6 +1531,7 @@ function Dashboard() {
                 <Line
                   type="monotone"
                   dataKey="level"
+                  name="Proficiency %"
                   stroke="#7c3aed"
                   strokeWidth={3}
                   dot={{ r: 4 }}
@@ -1342,8 +1544,10 @@ function Dashboard() {
 
       <div className="card dash-strength">
         <div>
-          <h3>Profile Strength</h3>
-          <p className="dash-subtitle">Boost it to get more recruiter attention.</p>
+          <h3 style={{ margin: 0 }}>Profile Strength</h3>
+          <p className="dash-subtitle" style={{ margin: "4px 0 0 0" }}>
+            Boost it by adding projects, education, and skills to get more recruiter attention.
+          </p>
         </div>
         <div
           className="strength-ring"
@@ -1361,6 +1565,448 @@ function Dashboard() {
         >
           Improve Profile
         </button>
+      </div>
+
+      {/* -------------------------------------------------- */}
+      {/* APPLIED JOBS SECTION                               */}
+      {/* -------------------------------------------------- */}
+      <div className="card dash-section-card" style={{ marginTop: 24 }}>
+        <div className="dash-section-header">
+          <div>
+            <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <Briefcase size={18} color="var(--cv-blue)" /> My Applied Jobs ({appliedJobs.length})
+            </h3>
+            <p style={{ color: "var(--cv-muted)", fontSize: 13, margin: "4px 0 0 0" }}>
+              Track the real-time review progress and recruiter views for jobs you have applied to.
+            </p>
+          </div>
+          <button
+            className="btn-outline"
+            style={{ fontSize: 13, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}
+            onClick={() => navigate("/jobs")}
+          >
+            Explore Jobs <ArrowRight size={13} />
+          </button>
+        </div>
+
+        {appliedJobs.length === 0 ? (
+          <div className="dash-empty-state">
+            <Briefcase size={36} color="#9ca3af" />
+            <h4>No jobs applied yet</h4>
+            <p>Browse active job openings on CareerVerse and apply with your saved resume in one click.</p>
+            <button
+              className="btn-primary"
+              style={{ marginTop: 12 }}
+              onClick={() => navigate("/jobs")}
+            >
+              Browse Jobs
+            </button>
+          </div>
+        ) : (
+          <div className="applied-jobs-table-wrap">
+            <table className="applied-jobs-table">
+              <thead>
+                <tr>
+                  <th>Job Title & Organization</th>
+                  <th>Type & Workplace</th>
+                  <th>Location & Salary</th>
+                  <th>Applied On</th>
+                  <th>Employer Views</th>
+                  <th>Application Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appliedJobs.map((app) => {
+                  const statusClass = (app.status || "Applied").toLowerCase().replace(/\s+/g, "-");
+                  return (
+                    <tr key={app._id}>
+                      <td>
+                        <div className="applied-job-title-box">
+                          <strong
+                            className="clickable-title"
+                            onClick={() => app.jobId && navigate(`/jobs/${app.jobId}`)}
+                          >
+                            {app.title}
+                          </strong>
+                          <span className="applied-company-name">
+                            <Building size={12} /> {app.company}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="job-type-pill">{app.type}</span>
+                        <span className="job-workplace-pill" style={{ marginLeft: 6 }}>
+                          {app.workplaceType}
+                        </span>
+                      </td>
+                      <td>
+                        <div>{app.location}</div>
+                        <small style={{ color: "var(--cv-muted)" }}>{app.salary}</small>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: 13, color: "#475569" }}>
+                          {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : "Recently"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="views-count-pill" title="Number of times recruiters viewed your application">
+                          <Eye size={12} /> {app.viewsCount || 0} views
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`application-status-badge ${statusClass}`}>
+                          {app.status || "Applied"}
+                        </span>
+                      </td>
+                      <td>
+                        {app.jobId && (
+                          <button
+                            className="btn-outline table-btn"
+                            onClick={() => navigate(`/jobs/${app.jobId}`)}
+                            title="View Job Details"
+                          >
+                            View Role <ExternalLink size={12} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* -------------------------------------------------- */}
+      {/* APPROACHES & OUTREACH SECTION                      */}
+      {/* -------------------------------------------------- */}
+      <div className="card dash-section-card" style={{ marginTop: 24 }}>
+        <div className="dash-section-header">
+          <div>
+            <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <Send size={18} color="var(--cv-blue)" /> Approaches & Outreach
+            </h3>
+            <p style={{ color: "var(--cv-muted)", fontSize: 13, margin: "4px 0 0 0" }}>
+              Review direct hiring inquiries from organizations and networking approaches from peers.
+            </p>
+          </div>
+
+          {/* Approach Tabs */}
+          <div className="dash-tab-group">
+            <button
+              type="button"
+              className={`dash-tab-btn ${approachTab === "received" ? "active" : ""}`}
+              onClick={() => setApproachTab("received")}
+            >
+              Received Approaches ({approaches?.received?.length || 0})
+            </button>
+            <button
+              type="button"
+              className={`dash-tab-btn ${approachTab === "sent" ? "active" : ""}`}
+              onClick={() => setApproachTab("sent")}
+            >
+              Sent Approaches ({approaches?.sent?.length || 0})
+            </button>
+          </div>
+        </div>
+
+        {approachTab === "received" ? (
+          (approaches?.received?.length || 0) === 0 ? (
+            <div className="dash-empty-state">
+              <Mail size={36} color="#9ca3af" />
+              <h4>No approaches received yet</h4>
+              <p>When organizations or fellow candidates approach you, their invitations and direct contact info will appear here.</p>
+            </div>
+          ) : (
+            <div className="approaches-grid">
+              {approaches.received.map((app) => {
+                const sender = app.sender || {};
+                const isOrg =
+                  app.senderType === "organization" ||
+                  sender.role === "organization" ||
+                  sender.role === "recruiter";
+                const senderName = isOrg
+                  ? sender.companyName || sender.name || "Organization"
+                  : sender.name || "Candidate";
+
+                return (
+                  <div key={app._id} className="approach-card">
+                    <div className="approach-card-top">
+                      <Avatar user={sender} size={46} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <h4
+                            style={{ margin: 0, fontSize: 15, cursor: "pointer" }}
+                            onClick={() => sender._id && navigate(`/profile/${sender._id}`)}
+                          >
+                            {senderName}
+                          </h4>
+                          {isOrg && <span className="org-role-tag">Hiring Partner</span>}
+                          {sender.isVerified && <span className="verified-badge-inline">✓</span>}
+                        </div>
+                        <p className="approach-card-sub">
+                          {isOrg
+                            ? `${sender.companyIndustry || "Organization"} • ${sender.location || "India"}`
+                            : sender.headline || "CareerVerse Candidate"}
+                        </p>
+                        <small style={{ color: "var(--cv-muted)" }}>
+                          Approached on {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "recently"}
+                        </small>
+                      </div>
+                    </div>
+
+                    <div className="approach-card-contacts">
+                      <div className="approach-contact-item">
+                        <Mail size={13} color="var(--cv-blue)" />
+                        <a href={`mailto:${sender.email}`}>{sender.email}</a>
+                      </div>
+                      {sender.phone && (
+                        <div className="approach-contact-item">
+                          <Phone size={13} color="var(--cv-blue)" />
+                          <a href={`tel:${sender.phone}`}>{sender.phone}</a>
+                        </div>
+                      )}
+                      {sender.location && (
+                        <div className="approach-contact-item">
+                          <MapPin size={13} color="var(--cv-blue)" />
+                          <span>{sender.location}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {app.message && (
+                      <div className="approach-card-msg">
+                        <strong>Message:</strong> "{app.message}"
+                      </div>
+                    )}
+
+                    <div className="approach-card-actions">
+                      <a href={`mailto:${sender.email}`} className="btn-primary table-btn">
+                        <Mail size={13} /> Reply via Email
+                      </a>
+                      {sender._id && (
+                        <button
+                          type="button"
+                          className="btn-outline table-btn"
+                          onClick={() => navigate(`/profile/${sender._id}`)}
+                        >
+                          <ExternalLink size={13} /> View Profile
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          (approaches?.sent?.length || 0) === 0 ? (
+            <div className="dash-empty-state">
+              <Send size={36} color="#9ca3af" />
+              <h4>No sent approaches</h4>
+              <p>You haven't approached any candidates yet. Browse candidate profiles to connect and collaborate.</p>
+            </div>
+          ) : (
+            <div className="approaches-grid">
+              {approaches.sent.map((app) => {
+                const recipient = app.recipient || {};
+                return (
+                  <div key={app._id} className="approach-card">
+                    <div className="approach-card-top">
+                      <Avatar user={recipient} size={46} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <h4
+                            style={{ margin: 0, fontSize: 15, cursor: "pointer" }}
+                            onClick={() => recipient._id && navigate(`/profile/${recipient._id}`)}
+                          >
+                            {recipient.name || "Candidate"}
+                          </h4>
+                          {recipient.isVerified && <span className="verified-badge-inline">✓</span>}
+                        </div>
+                        <p className="approach-card-sub">{recipient.headline || "CareerVerse Candidate"}</p>
+                        <span className={`saved-status-badge ${app.status}`}>
+                          {app.status === "approached" ? "Email Sent" : "Details Saved"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="approach-card-contacts">
+                      <div className="approach-contact-item">
+                        <Mail size={13} color="var(--cv-blue)" />
+                        <a href={`mailto:${recipient.email}`}>{recipient.email}</a>
+                      </div>
+                      {recipient.phone && (
+                        <div className="approach-contact-item">
+                          <Phone size={13} color="var(--cv-blue)" />
+                          <a href={`tel:${recipient.phone}`}>{recipient.phone}</a>
+                        </div>
+                      )}
+                    </div>
+
+                    {app.message && (
+                      <div className="approach-card-msg">
+                        <strong>Your Note:</strong> "{app.message}"
+                      </div>
+                    )}
+
+                    <div className="approach-card-actions">
+                      {recipient._id && (
+                        <button
+                          type="button"
+                          className="btn-outline table-btn"
+                          onClick={() => navigate(`/profile/${recipient._id}`)}
+                        >
+                          <ExternalLink size={13} /> View Profile
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+      </div>
+
+      {/* -------------------------------------------------- */}
+      {/* CONNECTIONS SECTION                                */}
+      {/* -------------------------------------------------- */}
+      <div className="card dash-section-card" style={{ marginTop: 24 }}>
+        <div className="dash-section-header">
+          <div>
+            <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <Users size={18} color="var(--cv-blue)" /> My Professional Connections ({connections.length})
+            </h3>
+            <p style={{ color: "var(--cv-muted)", fontSize: 13, margin: "4px 0 0 0" }}>
+              Colleagues, peers, and industry mentors currently in your confirmed network.
+            </p>
+          </div>
+          <button
+            className="btn-outline"
+            style={{ fontSize: 13, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}
+            onClick={() => navigate("/network")}
+          >
+            Grow Network <UserPlus size={13} />
+          </button>
+        </div>
+
+        {connections.length === 0 ? (
+          <div className="dash-empty-state">
+            <Users size={36} color="#9ca3af" />
+            <h4>No connections yet</h4>
+            <p>Connect with peers, alumni, and colleagues in the Network tab to build your professional circle.</p>
+            <button
+              className="btn-primary"
+              style={{ marginTop: 12 }}
+              onClick={() => navigate("/network")}
+            >
+              Find Connections
+            </button>
+          </div>
+        ) : (
+          <div className="dash-connections-grid">
+            {connections.map((c) => {
+              const partner = c.partner || {};
+              const partnerId = partner._id || partner.id;
+              return (
+                <div key={c._id || partnerId} className="dash-connection-card">
+                  <div className="dash-connection-top">
+                    <Avatar user={partner} size={48} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <h4
+                          style={{ margin: 0, fontSize: 15, cursor: "pointer" }}
+                          onClick={() => partnerId && navigate(`/profile/${partnerId}`)}
+                        >
+                          {partner.name || "Member"}
+                        </h4>
+                        {partner.isVerified && <span className="verified-badge-inline">✓</span>}
+                      </div>
+                      <p className="dash-connection-headline">{partner.headline || "CareerVerse Member"}</p>
+                      {partner.location && (
+                        <span className="dash-connection-location">
+                          <MapPin size={12} /> {partner.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="dash-connection-card-footer">
+                    <small style={{ color: "var(--cv-muted)" }}>
+                      Connected {c.connectedAt ? new Date(c.connectedAt).toLocaleDateString() : "recently"}
+                    </small>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {partnerId && (
+                        <button
+                          type="button"
+                          className="btn-outline table-btn"
+                          onClick={() => navigate(`/profile/${partnerId}`)}
+                        >
+                          <ExternalLink size={12} /> Profile
+                        </button>
+                      )}
+                      {partnerId && (
+                        <button
+                          type="button"
+                          className="btn-primary table-btn"
+                          onClick={() => navigate(`/messages?userId=${partnerId}`)}
+                        >
+                          <MessageSquare size={12} /> Message
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* -------------------------------------------------- */}
+      {/* DIRECT MESSAGING CONTROLS & RESTRICTION CARD       */}
+      {/* -------------------------------------------------- */}
+      <div className="card dash-section-card dash-messaging-privacy-card" style={{ marginTop: 24 }}>
+        <div className="dash-messaging-privacy-inner">
+          <div className="dash-messaging-privacy-info">
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div className="dash-msg-icon-wrap">
+                <MessageSquare size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16 }}>Direct Messaging Privacy & Networking Availability</h3>
+                <p style={{ margin: "3px 0 0 0", color: "var(--cv-muted)", fontSize: 13 }}>
+                  Control whether candidate peers can direct message you for career networking.
+                </p>
+              </div>
+            </div>
+            <p className="dash-messaging-rule-desc">
+              When <strong>Enabled</strong>, fellow candidates can initiate chats with you and you can message them. When <strong>Disabled</strong>, your inbox is frozen and other candidates cannot send you direct messages.
+            </p>
+          </div>
+
+          <div className="dash-messaging-toggle-actions">
+            <span className={`dash-msg-status-pill ${messagingEnabled ? "active" : "disabled"}`}>
+              {messagingEnabled ? "● Messaging Active" : "○ Messaging Disabled"}
+            </span>
+
+            <button
+              type="button"
+              className={messagingEnabled ? "btn-outline btn-msg-disable" : "btn-primary btn-msg-enable"}
+              onClick={handleToggleMessaging}
+              disabled={togglingMessaging}
+            >
+              {togglingMessaging
+                ? "Updating..."
+                : messagingEnabled
+                ? "Turn Off Messaging"
+                : "Turn On Messaging"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -71,7 +71,16 @@ const hiredEmployeeSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Active", "Onboarding", "Probation", "Full-Time", "Completed"],
+      enum: [
+        "Active",
+        "Joined",
+        "Offer Accepted",
+        "Onboarding",
+        "Probation",
+        "Full-Time",
+        "Completed",
+        "Resigned",
+      ],
       default: "Active",
     },
   },

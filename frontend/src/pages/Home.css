@@ -1,8 +1,12 @@
 .home-layout {
   display: grid;
-  grid-template-columns: 260px 1fr 300px;
+  grid-template-columns: 240px minmax(0, 1fr) 280px;
   gap: 20px;
   align-items: start;
+}
+
+.home-feed {
+  min-width: 0;
 }
 
 .home-side {
@@ -11,6 +15,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 /* Profile mini card */
@@ -214,33 +219,26 @@
   opacity: 0.9;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
+/* Responsive Layout */
+@media (max-width: 1100px) {
+  .home-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .home-side.right {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
   .home-layout {
     grid-template-columns: 1fr;
   }
 
-  .home-side.left,
-  .home-side.right {
-    position: static;
-  }
-
-  .home-side {
-    flex-direction: row;
-    overflow-x: auto;
-  }
-
-  .home-side .card {
-    min-width: 240px;
-  }
-}
-
-@media (max-width: 640px) {
-  .home-side {
+  .home-side.left {
     display: none;
   }
 
-  .composer-actions button span-text,
   .composer-actions button {
     font-size: 12px;
   }

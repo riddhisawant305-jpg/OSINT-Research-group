@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ThumbsUp, MessageCircle, UserPlus, Briefcase, AtSign, CheckCheck } from "lucide-react";
+import { ThumbsUp, MessageCircle, UserPlus, Briefcase, AtSign, CheckCheck, MessageSquare } from "lucide-react";
 import API from "../api/client";
 import Avatar from "../component/Avatar";
 import "./Notifications.css";
@@ -30,6 +30,8 @@ function Notifications() {
 
   const iconFor = (type) => {
     switch (type) {
+      case "message":
+        return { Icon: MessageSquare, color: "#2563eb" };
       case "like":
         return { Icon: ThumbsUp, color: "#2563eb" };
       case "comment":
@@ -45,11 +47,17 @@ function Notifications() {
     }
   };
 
-  const filters = ["All", "Likes", "Comments", "Connections", "Jobs"];
+  const filters = ["All", "Messages", "Likes", "Comments", "Connections", "Jobs"];
 
   const filtered = list.filter((n) => {
     if (active === "All") return true;
-    const map = { Likes: "like", Comments: "comment", Connections: "connection", Jobs: "job" };
+    const map = {
+      Messages: "message",
+      Likes: "like",
+      Comments: "comment",
+      Connections: "connection",
+      Jobs: "job",
+    };
     return n.type === map[active];
   });
 

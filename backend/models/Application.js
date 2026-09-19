@@ -33,6 +33,14 @@ const applicationSchema = new mongoose.Schema(
       enum: ["Applied", "Under Review", "Shortlisted", "Rejected", "Accepted"],
       default: "Applied",
     },
+    viewsCount: {
+      type: Number,
+      default: 0,
+    },
+    lastViewedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

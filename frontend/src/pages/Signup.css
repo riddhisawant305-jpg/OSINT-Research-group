@@ -199,3 +199,82 @@
 .signup-card textarea:focus {
   border-color: #2563eb;
 }
+
+/* OTP Email Verification Styles */
+.otp-email-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.otp-email-group input {
+  margin-bottom: 0 !important;
+  flex: 1;
+}
+
+.btn-send-otp {
+  white-space: nowrap;
+  padding: 13px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-send-otp:hover:not(:disabled) {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.btn-send-otp:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #cbd5e1;
+}
+
+.otp-code-input-wrap {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.otp-code-input-wrap input {
+  padding-left: 38px !important;
+  margin-bottom: 0 !important;
+  letter-spacing: 3px;
+  font-weight: 600;
+  font-family: monospace;
+  font-size: 16px;
+}
+
+.otp-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #2563eb;
+}
+
+.otp-feedback-msg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  margin-top: -8px;
+  margin-bottom: 14px;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.otp-feedback-msg.success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}

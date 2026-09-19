@@ -50,7 +50,7 @@
   gap: 16px;
 }
 
-.connection-card {
+.connections-page .connection-card {
   text-align: center;
   padding: 0 18px 18px;
   overflow: hidden;
@@ -62,12 +62,12 @@
   margin: 0 -18px;
 }
 
-.connection-card .cv-avatar {
+.connections-page .connection-card .cv-avatar {
   margin: -36px auto 0;
   border: 3px solid #fff;
 }
 
-.connection-card h3 {
+.connections-page .connection-card h3 {
   font-size: 16px;
   margin-top: 10px;
 }

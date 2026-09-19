@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Otp = require("../models/Otp");
 const { generateToken } = require("../utils/jwt");
 const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library");
@@ -6,9 +7,68 @@ const {
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendPasswordResetSuccessEmail,
+  sendRegistrationOtpEmail,
 } = require("../services/emailService");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// @desc    Send Email OTP for Registration
+// @route   POST /api/auth/send-otp
+// @access  Public
+const sendRegistrationOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Email address is required",
+      });
+    }
+
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Verify email is not already registered
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email already exists. Please log in.",
+      });
+    }
+
+    // Generate 6-digit numeric verification code
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Invalidate prior codes and store new OTP with 10-minute expiry
+    await Otp.deleteMany({ email: normalizedEmail });
+    await Otp.create({
+      email: normalizedEmail,
+      otp,
+      createdAt: new Date(),
+    });
+
+    // Send email with the OTP code
+    await sendRegistrationOtpEmail({
+      to: normalizedEmail,
+      otp,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Verification code sent to ${normalizedEmail}.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -19,6 +79,7 @@ const register = async (req, res, next) => {
       name,
       email,
       password,
+      otp,
       headline,
       role,
       companyName,
@@ -63,6 +124,26 @@ const register = async (req, res, next) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
+    // Verify OTP
+    if (!otp || !otp.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Email verification code (OTP) is required. Please verify your email.",
+      });
+    }
+
+    const validOtpDoc = await Otp.findOne({
+      email: normalizedEmail,
+      otp: otp.trim(),
+    });
+
+    if (!validOtpDoc) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification code. Please request a new code.",
+      });
+    }
+
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({
@@ -70,6 +151,9 @@ const register = async (req, res, next) => {
         message: "An account with this email already exists",
       });
     }
+
+    // Cleanup used OTP
+    await Otp.deleteMany({ email: normalizedEmail });
 
     // Role can be student, recruiter, or organization
     const userRole =
@@ -519,6 +603,7 @@ const resetPassword = async (req, res, next) => {
 
 module.exports = {
   register,
+  sendRegistrationOtp,
   login,
   googleAuth,
   forgotPassword,

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import API from "../api/client";
+import { Mail, ShieldCheck, CheckCircle2 } from "lucide-react";
 import "./Signup.css";
 
 const GOOGLE_CLIENT_ID =
@@ -22,10 +24,12 @@ function Signup() {
       setAccountType("candidate");
     }
   }, [searchParams]);
+
   const [form, setForm] = useState({
     name: "",
     headline: "",
     email: "",
+    otp: "",
     password: "",
     companyIndustry: "",
     companyWebsite: "",
@@ -37,6 +41,55 @@ function Signup() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoaded, setGoogleLoaded] = useState(false);
+
+  // Email OTP verification state
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [otpSuccessMsg, setOtpSuccessMsg] = useState("");
+
+  useEffect(() => {
+    let interval = null;
+    if (otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [otpTimer]);
+
+  const handleSendOtp = async () => {
+    setError("");
+    setOtpSuccessMsg("");
+
+    if (!form.email || !form.email.trim()) {
+      setError("Please enter your email address to receive the verification OTP.");
+      return;
+    }
+
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      setError("Please provide a valid email address.");
+      return;
+    }
+
+    setOtpSending(true);
+    try {
+      const res = await API.post("/auth/send-otp", { email: form.email.trim() });
+      setOtpSent(true);
+      setOtpSuccessMsg(res.data?.message || "Verification code dispatched to your email.");
+      setOtpTimer(60);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to send verification code. Please check your email and try again."
+      );
+    } finally {
+      setOtpSending(false);
+    }
+  };
 
   const update = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -105,12 +158,19 @@ function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!form.otp || !form.otp.trim()) {
+      setError("Please enter the 6-digit email verification code (OTP). Click 'Send OTP' to receive it.");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
         name: form.name,
         email: form.email,
         password: form.password,
+        otp: form.otp.trim(),
         role: accountType === "organization" ? "organization" : "student",
         headline:
           form.headline ||
@@ -223,15 +283,45 @@ function Signup() {
                 required
               />
 
-              <label>Email Address</label>
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                value={form.email}
-                onChange={update}
-                required
-              />
+              <label>Email Address *</label>
+              <div className="otp-email-group">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Enter your email"
+                  value={form.email}
+                  onChange={update}
+                  required
+                />
+                <button
+                  type="button"
+                  className="btn-send-otp"
+                  onClick={handleSendOtp}
+                  disabled={otpSending || otpTimer > 0}
+                >
+                  {otpSending ? "Sending..." : otpTimer > 0 ? `Resend (${otpTimer}s)` : otpSent ? "Resend OTP" : "Send OTP"}
+                </button>
+              </div>
+
+              {otpSuccessMsg && (
+                <div className="otp-feedback-msg success">
+                  <CheckCircle2 size={14} /> {otpSuccessMsg}
+                </div>
+              )}
+
+              <label>Email Verification Code (OTP) *</label>
+              <div className="otp-code-input-wrap">
+                <ShieldCheck size={16} className="otp-input-icon" />
+                <input
+                  type="text"
+                  name="otp"
+                  placeholder="Enter 6-digit code sent to your email"
+                  value={form.otp}
+                  onChange={update}
+                  maxLength={6}
+                  required
+                />
+              </div>
 
               <label>Password</label>
               <input
@@ -264,15 +354,45 @@ function Signup() {
                 required
               />
 
-              <label>Official Work Email</label>
-              <input
-                type="email"
-                name="email"
-                placeholder="e.g. hr@acmetech.com"
-                value={form.email}
-                onChange={update}
-                required
-              />
+              <label>Official Work Email *</label>
+              <div className="otp-email-group">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="e.g. hr@acmetech.com"
+                  value={form.email}
+                  onChange={update}
+                  required
+                />
+                <button
+                  type="button"
+                  className="btn-send-otp"
+                  onClick={handleSendOtp}
+                  disabled={otpSending || otpTimer > 0}
+                >
+                  {otpSending ? "Sending..." : otpTimer > 0 ? `Resend (${otpTimer}s)` : otpSent ? "Resend OTP" : "Send OTP"}
+                </button>
+              </div>
+
+              {otpSuccessMsg && (
+                <div className="otp-feedback-msg success">
+                  <CheckCircle2 size={14} /> {otpSuccessMsg}
+                </div>
+              )}
+
+              <label>Official Email Verification Code (OTP) *</label>
+              <div className="otp-code-input-wrap">
+                <ShieldCheck size={16} className="otp-input-icon" />
+                <input
+                  type="text"
+                  name="otp"
+                  placeholder="Enter 6-digit code sent to work email"
+                  value={form.otp}
+                  onChange={update}
+                  maxLength={6}
+                  required
+                />
+              </div>
 
               <label>Password</label>
               <input

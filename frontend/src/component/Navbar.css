@@ -76,10 +76,11 @@
 .navbar-link.active::after {
   content: "";
   position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: -8px;
-  height: 2px;
+  left: 12px;
+  right: 12px;
+  bottom: 0px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
   background: var(--cv-blue);
 }
 

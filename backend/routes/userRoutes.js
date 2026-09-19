@@ -26,9 +26,10 @@ const {
   createHiredEmployee,
   updateHiredEmployee,
   deleteHiredEmployee,
+  toggleMessagingPreference,
 } = require("../controllers/userController");
 const { getMySavedJobs } = require("../controllers/jobController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, optionalProtect } = require("../middleware/authMiddleware");
 
 // Ensure avatar uploads directory exists
 const avatarDir = path.join(__dirname, "../uploads/avatars");
@@ -65,6 +66,7 @@ router.put("/me", protect, updateMyProfile);
 router.post("/me/avatar", protect, avatarUpload.single("avatar"), uploadAvatar);
 router.get("/me/dashboard", protect, getDashboard);
 router.get("/me/saved-jobs", protect, getMySavedJobs);
+router.put("/me/messaging-toggle", protect, toggleMessagingPreference);
 
 // Hired Employees (Organization / Recruiter)
 router.get("/me/hired-employees", protect, getHiredEmployees);
@@ -92,7 +94,7 @@ router.post("/me/projects", protect, addProject);
 router.put("/me/projects/:projectId", protect, updateProject);
 router.delete("/me/projects/:projectId", protect, deleteProject);
 
-// Public user profile by ID
-router.get("/:id", getUserById);
+// Public user profile by ID (optional auth for genuine profile view tracking)
+router.get("/:id", optionalProtect, getUserById);
 
 module.exports = router;
